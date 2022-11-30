@@ -1,0 +1,131 @@
+<html>
+<head>
+</head>
+<body>
+<form enctype="multipart/form-data" action="/postRecipe" method="POST">
+	<h1>Welcome {{username}}</h1> 
+    <h1>Post New Recipe</h1>
+	Recipe Title: <input type="text" name = "title" placeholder="Enter Recipe Title" required/> </br>
+    Number of Servings: <input type="text" name = "numServings" placeholder="Enter Number of Servings" required/> </br>
+    Ingredients:<br>
+    <table id="ingredients">
+        <th>Ingredient</th>
+        <th>Unit</th>
+        <th>Amount</th>
+        <tr>
+            <td>
+                <select name="ingredient">
+                    {% for i in ingredient %}
+                    <option value={{i.iName}}>{{i.iName}}</option>
+                    {% endfor %}
+                </select> 
+            </td>
+            <td>
+                <select name="unit">
+                {% for u in unit %}
+                <option value={{u.unitName}}>{{u.unitName}}</option>
+                {% endfor %}
+            </select></td>
+            <td><input type="number" step="0.01" name="amount" /></td>
+        </tr>
+    </table>
+    <button type="button" onclick="addIngredient()">Add Ingredient</button>
+
+    <div id="tags" style="min-height: 50px;">Tags:<br>
+    <input type="text" name="tag" />
+    </div>
+    <button type="button" onclick="addTag()">Add a Tag</button>
+
+    <br>Steps:<br>
+    <table id="steps">
+        <th>Step No.</th>
+        <th style="width:90%">Desciption</th>
+        <tr>
+            <td>1</td>
+            <td><input type="text" name="step"/></td>
+        </tr>
+    </table>
+    <button type="button" onclick="addStep()">Add Step</button>
+    <br>
+    Upload Pictures:(Optional)
+    <input type="file" name="pictures" multiple="" onchange="showFileNames(event)"><span id="filenames"></span>
+	<br>
+    <input type="submit" value = Post />
+</form>
+
+<style type="text/css">
+	table, th, td{
+		border: 1px solid black;
+	}
+    input[name="step"]{
+        width: 100%;
+    }
+    input[type="submit"]{
+        margin-top: 10px;
+        font-size: large;
+        font-weight: bold;
+    }
+
+</style>
+<script>
+    function addIngredient() {
+      var table = document.getElementById("ingredients");
+      var row = table.insertRow();
+      var cell1 = row.insertCell(0);
+      var cell2 = row.insertCell(1);
+      var cell3 = row.insertCell(2);
+      var ingredient_list = document.createElement("select");
+      var ingredient = JSON.parse('{{ingredient|tojson}}');
+      for (var i in ingredient){
+        var option = document.createElement("option");
+            option.value = ingredient[i]['iName'];
+            option.text = ingredient[i]['iName'];
+            ingredient_list.appendChild(option);
+      }
+      var unit_list = document.createElement("select");
+      var unit = JSON.parse('{{unit|tojson}}');
+      for (var u in unit){
+        var option = document.createElement("option");
+            option.value = unit[u]['unitName'];
+            option.text = unit[u]['unitName'];
+            unit_list.appendChild(option);
+      }
+      var amount_input = document.createElement("input");
+      ingredient_list.setAttribute("name","ingredient");
+      unit_list.setAttribute("name","unit");
+      amount_input.setAttribute("name","amount");
+      cell1.appendChild(ingredient_list);
+      cell2.appendChild(unit_list);
+      cell3.appendChild(amount_input);
+    }
+    function addTag(){
+        var tag_input = document.createElement("input");
+        tag_input.setAttribute("name","tag");
+        var div = document.getElementById("tags");
+        div.appendChild(tag_input);
+    }
+    function addStep(){
+        var table = document.getElementById("steps");
+        var row = table.insertRow();
+        var cell1 = row.insertCell(0);
+        cell1.innerHTML = table.rows.length - 1;
+        var cell2 = row.insertCell(1);
+        var input = document.createElement("input");
+        input.setAttribute("name","step");
+        cell2.appendChild(input);
+    }
+    var showFileNames = function(event){
+        var output = document.getElementById("filenames");
+        console.log();
+        var files = event.target.files
+        for (var i = 0; i < files.length; i++){
+            output.innerHTML += files.item(i).name;
+            output.innerHTML += "&nbsp;";
+        }
+    }
+    </script>
+
+</body>
+
+
+</html>
