@@ -1,6 +1,5 @@
 # coding:utf-8
-import mysql.connector
-from mysql.connector import errorcode
+import pymysql
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, make_response
 from flask_cors import CORS
 
@@ -19,7 +18,7 @@ CORS(app, resources={r'/*': {'origins': '*'}})
 
 # 数据库变量
 cnx = None
-cnx = mysql.connector.connect(user='Sihan', password='Wsh010217', host='127.0.0.1', database='cs6083_project')
+cnx = pymysql.connect(user='Sihan', password='Wsh010217', host='127.0.0.1', database='cs6083_project')
 
 @app.route('/')
 def HomePage():
@@ -58,7 +57,7 @@ def SearchRecipesResult():
                 for (recipeID, title, numServings, postedBy, avgstars) in cursor:
                     result.append((recipeID, title, numServings, postedBy, avgstars))
                 cursor.close()
-            except mysql.connector.Error as err:
+            except pymysql.InternalError as err:
                 print("Something went wrong: {}".format(err))
                 return "failed"
         return str(result)
