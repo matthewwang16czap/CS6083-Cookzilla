@@ -1,0 +1,90 @@
+<html>
+
+<head>
+</head>
+
+<body>
+	<!-- <form action="/post" method="POST"> -->
+	<h1>Welcome {{username}}</h1>
+	<!-- <input type="text" name = "blog" placeholder="post" required/> </br>
+	<input type="submit" value = Post /> -->
+	<!-- </form> -->
+
+	<style type="text/css">
+		table,
+		th,
+		td {
+			border: 1px solid black;
+		}
+	</style>
+
+	-- Here are the groups you are in:
+	<table>
+		<th>Group Name</th>
+		<th>Group Creator</th>
+		{% for line in groups %}
+		<tr>
+			<td>{{line.gName}}</td>
+			<td>{{line.gCreator}}</td>
+		</tr>
+		{% endfor %}
+	</table>
+	
+</body></br>
+<h2>You can only post an event in the group that you are a member of</h2>
+<h2>Post an Event using the following form</h2>
+<h2>You can upload multiple picutres</h2>
+<h2>Allowed file types are png, jpg, jpeg, gif</h2>
+<h2>After clicking the sumbit button, you will see the eventID or an error message</h2>
+<form method="POST" action="/postEvent" enctype=multipart/form-data>
+
+	<!-- <select name="gName">
+{% for line in groups %}
+	
+	<option value="{{line.gName}}">{{line.gName}}</option>
+
+{% endfor %}
+</select>
+</br> -->
+
+	<input type="text" name="eName" placeholder="Event Name" required /> Required</br>
+	<input type="text" name="eDesc" placeholder="Event Description" /> Optional</br>
+	<input type="datetime" name="eDate" placeholder="Event Date and Time" required /> Required Format: 2022-08-22 15:22:00</br>
+	<input type="text" name="gName" placeholder="Group Name" required /> Required</br>
+	<input type="text" name="gCreator" placeholder="Group Creator" required /> Required</br>
+	<input type="file" name="files[]" autocomplete="off" multiple=""> </br>
+	<input type="submit" value=Submit /> </br>
+</form>
+{% if error %}
+<p class="error"><strong>Error:</strong> {{error}}</p>
+{% endif %}
+{% if message %}
+<p class="message"><strong>Message:</strong> {{message}}</p>
+{% endif %}
+-- </br>
+
+
+
+<!-- <table>
+	<th>Time</th>
+	<th>Post</th>
+
+{% for line in posts %}
+	<tr>
+		<td>{{line.ts}}</td>
+		<td>{{line.blog_post}}</td>
+	</tr>
+{% endfor %}
+</table> -->
+
+<!-- <a href="/select_blogger">Select a blogger</a>
+<br>
+<a href="/upload_form">Upload a photo</a>
+<br> -->
+<a href="/home">Back to Home Page</a> </br>
+<a href="/logout">Logout</a>
+
+<!-- </body> -->
+
+
+</html>
