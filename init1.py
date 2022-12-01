@@ -16,9 +16,7 @@ import hashlib
 salt = "6083database"
 
 
-###Initialize the app from Flask
-##app = Flask(__name__)
-##app.secret_key = "secret key"
+
 
 #Configure MySQL
 conn = pymysql.connect(host='localhost',
@@ -28,7 +26,6 @@ conn = pymysql.connect(host='localhost',
                        db='6083project',
                        charset='utf8mb4',
                        cursorclass=pymysql.cursors.DictCursor)
-
 
 def allowed_image(filename):
 
@@ -50,6 +47,7 @@ def allowed_image_filesize(filesize):
     else:
         return False
 
+#check user's group and return GroupName and GroupCreator
 def getUserGroup(user):
     cursor = conn.cursor()
     query = 'SELECT gName, gCreator FROM groupmembership WHERE memberName = %s'
@@ -58,119 +56,13 @@ def getUserGroup(user):
     cursor.close
     return data
 
+#if logged in, return username; if not return Null
 def checkUserLogin():
     user = None
     # check if the user logged in or not
     if session.get('username'):
         user = session['username']
     return user
-
-#Define a route to post an event page
-@app.route('/postEvent')
-def postEventPage():
-    user = None
-    # check if the user logged in or not
-    if session.get('username'):
-        user = session['username']
-    # if user did not log in, go back to the login page
-    if not user:
-        return redirect(url_for('login'))
-
-    data = getUserGroup(user)
-    return render_template('post_event.html', username=user, groups = data)
-
-#post event
-@app.route('/postEvent', methods=['GET', 'POST'])
-def postEvent():
-    user = session['username']
-    finalPath = []
-    #check if pictures
-    if request.method == 'POST':
-        # check if the post request has the file part
-        if 'files[]' not in request.files:
-            finalPath = None
-        else:
-            files = request.files.getlist('files[]')
-            for file in files:
-                if file.filename == '':
-                    continue
-                elif file and allowed_file(file.filename):
-                    filename = secure_filename(file.filename)
-                    #file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-                    finalPath.append(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-                    #flash('File successfully uploaded')
-                    #return redirect('/')
-                else:
-                    data = getUserGroup(user)
-                    error = 'Allowed file types are png, jpg, jpeg, gif'
-                    return render_template('post_event.html', username = user, groups = data, error=error)
-                    #flash('Allowed file types are txt, pdf, png, jpg, jpeg, gif')
-                    #return redirect(request.url)
-
-    #get information
-    eName = request.form['eName']
-    eDesc = request.form['eDesc']
-    if not eDesc:
-        eDesc = None
-    eDate = request.form['eDate']
-    gName = request.form['gName']
-    gCreator = request.form['gCreator']
-
-    # if request.method == 'POST':
-    #     # check if the post request has the file part
-    #     if 'file' not in request.files:
-    #         finalPath = None
-    #     else:
-    #         file = request.files['file']
-    #         if file.filename == '':
-    #             file = None
-    #         if file and allowed_file(file.filename):
-    #             filename = secure_filename(file.filename)
-    #             finalPath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-    #             #flash('File successfully uploaded')
-    #             #return redirect('/upload_form')
-    #         else:
-    #             error = 'Allowed file types are txt, pdf, png, jpg, jpeg, gif'
-
-
-
-
-    #check if the user is in the group
-    cursor = conn.cursor()
-    query = 'SELECT * FROM groupmembership WHERE memberName = %s AND gName = %s AND gCreator = %s'
-    cursor.execute(query, (user, gName, gCreator))
-    data = cursor.fetchall()
-    #if not, give an error message
-    if not data:
-        error = 'You are not permitted to add event for a group that you are not a member of!'
-        conn.commit()
-        cursor.close()
-        data = getUserGroup(user)
-        return render_template('post_event.html', username = user, groups = data, error=error)
-    #else add the data to the database
-    query = 'INSERT INTO event (eName, eDesc, eDate, gName, gCreator) VALUES(%s, %s, %s, %s, %s)'
-    cursor.execute(query, (eName, eDesc, eDate, gName, gCreator))
-    #conn.commit()
-    #cursor.close()
-
-    eID = cursor.lastrowid
-    #deal with pictures, if no pictures, skip
-    if finalPath:
-        #cursor = conn.cursor()
-        i = 0
-        for finalP in finalPath:
-            firstpart = finalP.rsplit('.', 1)[0].lower() + '-' + str(eID) + '-' + str(i)
-            secondpart = finalP.rsplit('.', 1)[1].lower()
-            finalP = firstpart + "." + secondpart
-            query = 'INSERT INTO eventpicture (eID, pictureURL) VALUES(%s, %s)'
-            cursor.execute(query, (eID, finalP))
-            file.save(os.path.join(finalP))
-        #file.save(finalPath)
-    conn.commit()
-    cursor.close()
-    data = getUserGroup(user)
-    message = 'You have added an event with eventID: ' + str(eID)
-    return render_template('post_event.html', username = user, groups = data, message = message)
 
 #Define a route to hello function
 @app.route('/')
@@ -279,79 +171,93 @@ def home():
     if not user:
         return redirect(url_for('login'))
     return render_template('home.html', username=user)
-    # cursor = conn.cursor();
-    # query = 'SELECT ts, blog_post FROM blog WHERE username = %s ORDER BY ts DESC'
-    # cursor.execute(query, (user))
-    # data = cursor.fetchall()
-    # cursor.close()
-    # return render_template('home.html', username=user, posts=data)
 
+#Define a route to post an event page
+@app.route('/postEvent')
+def postEventPage():
+    user = None
+    # check if the user logged in or not
+    if session.get('username'):
+        user = session['username']
+    # if user did not log in, go back to the login page
+    if not user:
+        return redirect(url_for('login'))
 
+    data = getUserGroup(user)
+    return render_template('post_event.html', username=user, groups = data)
 
+#post event
+@app.route('/postEvent', methods=['GET', 'POST'])
+def postEvent():
+    user = session['username']
+    finalPath = []
+    #check if pictures
+    if request.method == 'POST':
+        # check if the post request has the file part
+        if 'files[]' not in request.files:
+            finalPath = None
+        else:
+            files = request.files.getlist('files[]')
+            for file in files:
+                if file.filename == '':
+                    continue
+                elif file and allowed_file(file.filename):
+                    filename = secure_filename(file.filename)
+                    #file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+                    finalPath.append(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+                    #flash('File successfully uploaded')
+                    #return redirect('/')
+                else:
+                    data = getUserGroup(user)
+                    error = 'Allowed file types are png, jpg, jpeg, gif'
+                    return render_template('post_event.html', username = user, groups = data, error=error)
+                    #flash('Allowed file types are txt, pdf, png, jpg, jpeg, gif')
+                    #return redirect(request.url)
 
-        
-@app.route('/post', methods=['GET', 'POST'])
-def post():
-    username = session['username']
-    cursor = conn.cursor();
-    blog = request.form['blog']
-    query = 'INSERT INTO blog (blog_post, username) VALUES(%s, %s)'
-    cursor.execute(query, (blog, username))
+    #get information
+    eName = request.form['eName']
+    eDesc = request.form['eDesc']
+    if not eDesc:
+        eDesc = None
+    eDate = request.form['eDate']
+    gName = request.form['gName']
+    gCreator = request.form['gCreator']
+
+    #check if the user is in the group
+    cursor = conn.cursor()
+    query = 'SELECT * FROM groupmembership WHERE memberName = %s AND gName = %s AND gCreator = %s'
+    cursor.execute(query, (user, gName, gCreator))
+    data = cursor.fetchall()
+    #if not, give an error message
+    if not data:
+        error = 'You are not permitted to add event for a group that you are not a member of!'
+        conn.commit()
+        cursor.close()
+        data = getUserGroup(user)
+        return render_template('post_event.html', username = user, groups = data, error=error)
+    #else add the data to the database
+    query = 'INSERT INTO event (eName, eDesc, eDate, gName, gCreator) VALUES(%s, %s, %s, %s, %s)'
+    cursor.execute(query, (eName, eDesc, eDate, gName, gCreator))
+
+    eID = cursor.lastrowid
+    #deal with pictures, if no pictures, skip
+    if finalPath:
+        i = 0
+        for finalP in finalPath:
+            firstpart = finalP.rsplit('.', 1)[0].lower() + '-' + str(eID) + '-' + str(i)
+            secondpart = finalP.rsplit('.', 1)[1].lower()
+            finalP = firstpart + "." + secondpart
+            query = 'INSERT INTO eventpicture (eID, pictureURL) VALUES(%s, %s)'
+            cursor.execute(query, (eID, finalP))
+            file.save(os.path.join(finalP))
     conn.commit()
     cursor.close()
-    return redirect(url_for('home'))
-
-@app.route('/select_blogger')
-def select_blogger():
-    #check that user is logged in
-    #username = session['username']
-    #should throw exception if username not found
-    
-    cursor = conn.cursor();
-    query = 'SELECT DISTINCT username FROM blog'
-    cursor.execute(query)
-    data = cursor.fetchall()
-    cursor.close()
-    return render_template('select_blogger.html', user_list=data)
-
-@app.route('/show_posts', methods=["GET", "POST"])
-def show_posts():
-    poster = request.args['poster']
-    cursor = conn.cursor();
-    query = 'SELECT ts, blog_post FROM blog WHERE username = %s ORDER BY ts DESC'
-    cursor.execute(query, poster)
-    data = cursor.fetchall()
-    cursor.close()
-    return render_template('show_posts.html', poster_name=poster, posts=data)
-
+    data = getUserGroup(user)
+    message = 'You have added an event with eventID: ' + str(eID)
+    return render_template('post_event.html', username = user, groups = data, message = message)
 
 def allowed_file(filename):
 	return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-	
-@app.route('/upload_form')
-def upload_form():
-	return render_template('upload.html')
-
-@app.route('/upload_form', methods=['POST'])
-def upload_file():
-	if request.method == 'POST':
-        # check if the post request has the file part
-		if 'file' not in request.files:
-			flash('No file part')
-			return redirect(request.url)
-		file = request.files['file']
-		if file.filename == '':
-			flash('No file selected for uploading')
-			return redirect(request.url)
-		if file and allowed_file(file.filename):
-			filename = secure_filename(file.filename)
-			file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-			flash('File successfully uploaded')
-			return redirect('/upload_form')
-		else:
-			flash('Allowed file types are txt, pdf, png, jpg, jpeg, gif')
-			return redirect(request.url)
-
 
 @app.route('/logout')
 def logout():
