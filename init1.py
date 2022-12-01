@@ -63,9 +63,6 @@ def checkUserLogin():
     # check if the user logged in or not
     if session.get('username'):
         user = session['username']
-    # if user did not log in, go back to the login page
-    if not user:
-        return redirect(url_for('login'))
     return user
 
 #Define a route to post an event page
@@ -156,32 +153,47 @@ def postEvent():
     #conn.commit()
     #cursor.close()
 
+    eID = cursor.lastrowid
     #deal with pictures, if no pictures, skip
     if finalPath:
         #cursor = conn.cursor()
-        eID = cursor.lastrowid
+        i = 0
         for finalP in finalPath:
+            firstpart = finalP.rsplit('.', 1)[0].lower() + '-' + str(eID) + '-' + str(i)
+            secondpart = finalP.rsplit('.', 1)[1].lower()
+            finalP = firstpart + "." + secondpart
             query = 'INSERT INTO eventpicture (eID, pictureURL) VALUES(%s, %s)'
             cursor.execute(query, (eID, finalP))
             file.save(os.path.join(finalP))
         #file.save(finalPath)
     conn.commit()
     cursor.close()
-    return redirect(url_for('home'))
+    data = getUserGroup(user)
+    message = 'You have added an event with eventID: ' + str(eID)
+    return render_template('post_event.html', username = user, groups = data, message = message)
 
 #Define a route to hello function
 @app.route('/')
 def hello():
-    return render_template('index.html')
+    user = checkUserLogin()
+    status = 'No User Logged In!'
+    info = None
+    if user:
+        status = 'User Logged In!'
+    return render_template('index.html', status = status, info = user)
 
 #Define route for login
 @app.route('/login')
 def login():
+    if session.get('username'):
+        session.pop('username')
     return render_template('login.html')
 
 #Define route for register
 @app.route('/register')
 def register():
+    if session.get('username'):
+        session.pop('username')
     return render_template('register.html')
 
 #Authenticates the login
@@ -253,7 +265,7 @@ def registerAuth():
         cursor.execute(ins, (username, password, lname, fname, email))
         conn.commit()
         cursor.close()
-        return render_template('index.html')
+        return redirect(url_for('hello'))
 
 
 @app.route('/home')
