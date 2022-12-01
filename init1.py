@@ -11,12 +11,9 @@ from werkzeug.utils import secure_filename
 
 ALLOWED_EXTENSIONS = set(['png', 'jpg', 'jpeg', 'gif'])
 
-#hash password
+#hash password and salt
 import hashlib
 salt = "6083database"
-
-
-
 
 #Configure MySQL
 conn = pymysql.connect(host='localhost',
@@ -38,7 +35,6 @@ def allowed_image(filename):
         return True
     else:
         return False
-
 
 def allowed_image_filesize(filesize):
 
@@ -69,7 +65,6 @@ def checkUserLogin():
 def hello():
     user = checkUserLogin()
     status = 'No User Logged In!'
-    info = None
     if user:
         status = 'User Logged In!'
     return render_template('index.html', status = status, info = user)
