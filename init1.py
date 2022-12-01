@@ -13,7 +13,7 @@ ALLOWED_EXTENSIONS = set(['png', 'jpg', 'jpeg', 'gif'])
 
 #hash password
 import hashlib
-salt = "6083database"
+salt = "6083database3"
 
 
 ###Initialize the app from Flask
