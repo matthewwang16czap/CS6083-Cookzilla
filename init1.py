@@ -5,21 +5,16 @@ import pymysql.cursors
 
 # for uploading photo:
 from app import app
-#from flask import Flask, flash, request, redirect, render_template
 from werkzeug.utils import secure_filename
 import os
 
 ALLOWED_EXTENSIONS = set(['png', 'jpg', 'jpeg', 'gif'])
 
-
-# Initialize the app from Flask
-##app = Flask(__name__)
-##app.secret_key = "secret key"
-
 # hash password and salt
 salt = "6083database"
 
 # Configure MySQL
+'''
 conn = pymysql.connect(host='localhost',
                        port=3306,
                        user='holly',
@@ -27,15 +22,20 @@ conn = pymysql.connect(host='localhost',
                        db='Cookzilla',
                        charset='utf8mb4',
                        cursorclass=pymysql.cursors.DictCursor)
+'''
+conn = pymysql.connect(host='localhost',
+                       port=3306,
+                       user='Sihan',
+                       password='Wsh010217',
+                       db='cs6083_project',
+                       charset='utf8mb4',
+                       cursorclass=pymysql.cursors.DictCursor)
 
 
 def allowed_image(filename):
-
-    if not "." in filename:
+    if "." not in filename:
         return False
-
     ext = filename.rsplit(".", 1)[1]
-
     if ext.upper() in app.config["ALLOWED_IMAGE_EXTENSIONS"]:
         return True
     else:
@@ -43,7 +43,6 @@ def allowed_image(filename):
 
 
 def allowed_image_filesize(filesize):
-
     if int(filesize) <= app.config["MAX_IMAGE_FILESIZE"]:
         return True
     else:
@@ -58,14 +57,13 @@ def allowed_file(filename):
 def getUserGroup(user):
     cursor = conn.cursor()
     query = 'SELECT gName, gCreator FROM groupmembership WHERE memberName = %s'
-    cursor.execute(query, (user))
+    cursor.execute(query, user)
     data = cursor.fetchall()
     cursor.close
     return data
 
+
 # if logged in, return username; if not return Null
-
-
 def checkUserLogin():
     user = None
     # check if the user logged in or not
@@ -73,9 +71,8 @@ def checkUserLogin():
         user = session['username']
     return user
 
+
 # Define a route to hello function
-
-
 @app.route('/')
 def hello():
     user = checkUserLogin()
@@ -84,27 +81,24 @@ def hello():
         status = 'User Logged In!'
     return render_template('index.html', status=status, info=user)
 
+
 # Define route for login
-
-
 @app.route('/login')
 def login():
     if session.get('username'):
         session.pop('username')
     return render_template('login.html')
 
+
 # Define route for register
-
-
 @app.route('/register')
 def register():
     if session.get('username'):
         session.pop('username')
     return render_template('register.html')
 
+
 # Authenticates the login
-
-
 @app.route('/loginAuth', methods=['GET', 'POST'])
 def loginAuth():
     # grabs information from the forms
@@ -114,7 +108,6 @@ def loginAuth():
     password = password + salt
     password = password.encode('utf-8')
     password = hashlib.sha256(password).hexdigest()
-
     # cursor used to send queries
     cursor = conn.cursor()
     # executes query
@@ -125,7 +118,7 @@ def loginAuth():
     # use fetchall() if you are expecting more than 1 data row
     cursor.close()
     error = None
-    if(data):
+    if data:
         # creates a session for the the user
         # session is a built in
         session['username'] = username
@@ -135,9 +128,8 @@ def loginAuth():
         error = 'Invalid username or password'
         return render_template('login.html', error=error)
 
+
 # Authenticates the register
-
-
 @app.route('/registerAuth', methods=['GET', 'POST'])
 def registerAuth():
     # grabs information from the forms
@@ -161,12 +153,12 @@ def registerAuth():
     cursor = conn.cursor()
     # executes query
     query = 'SELECT * FROM person WHERE username = %s'
-    cursor.execute(query, (username))
+    cursor.execute(query, username)
     # stores the results in a variable
     data = cursor.fetchone()
     # use fetchall() if you are expecting more than 1 data row
     error = None
-    if(data):
+    if data:
         # If the previous query returns data, then user exists
         error = "This user already exists"
         return render_template('register.html', error=error)
@@ -190,9 +182,8 @@ def home():
         return redirect(url_for('login'))
     return render_template('home.html', username=user)
 
+
 # Define a route to post an event page
-
-
 @app.route('/postEvent')
 def postEventPage():
     user = None
@@ -202,13 +193,11 @@ def postEventPage():
     # if user did not log in, go back to the login page
     if not user:
         return redirect(url_for('login'))
-
     data = getUserGroup(user)
     return render_template('post_event.html', username=user, groups=data)
 
+
 # post event
-
-
 @app.route('/postEvent', methods=['GET', 'POST'])
 def postEvent():
     user = session['username']
@@ -225,16 +214,16 @@ def postEvent():
                     continue
                 elif file and allowed_file(file.filename):
                     filename = secure_filename(file.filename)
-                    #file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+                    # file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
                     finalPath.append(os.path.join(
                         app.config['UPLOAD_EVENT_FOLDER'], filename))
-                    #flash('File successfully uploaded')
+                    # flash('File successfully uploaded')
                     # return redirect('/')
                 else:
                     data = getUserGroup(user)
                     error = 'Allowed file types are png, jpg, jpeg, gif'
                     return render_template('post_event.html', username=user, groups=data, error=error)
-                    #flash('Allowed file types are txt, pdf, png, jpg, jpeg, gif')
+                    # flash('Allowed file types are txt, pdf, png, jpg, jpeg, gif')
                     # return redirect(request.url)
 
     # get information
@@ -360,44 +349,68 @@ def post_recipe():
 
 
 @app.route('/searchRecipes')
-def SearchRecipes():
+def search_recipes():
     return render_template('search_recipes.html')
 
 
 @app.route('/searchRecipesResult', methods=['GET', 'POST'])
-def SearchRecipesResult():
+def search_recipes_result():
     if request.method == 'GET':
+        # get parameters
         query_tag = request.args.get("tag")
         query_stars = int(request.args.get("stars"))
         query_operator = request.args.get("operator")
-
+        # prepare query
         cursor = conn.cursor()
         data = {
             'query_tag': query_tag,
             'query_stars': query_stars,
             'query_operator': query_operator
         }
-        result = []
-
-        print(data)
-
+        results = []
+        # case: only query_stars condition
         if query_tag == "":
-            # search only avgstars
             statement = (
                 "select recipeID, title, numServings, postedBy, avgstars "
                 "from recipe_avgstars "
                 "where avgstars > %(query_stars)s"
             )
-            try:
-                cursor.execute(statement, data)
-                for (recipeID, title, numServings, postedBy, avgstars) in cursor:
-                    result.append(
-                        (recipeID, title, numServings, postedBy, avgstars))
-                cursor.close()
-            except pymysql.InternalError as err:
-                print("Something went wrong: {}".format(err))
-                return "failed"
-        return str(result)
+        # case: only query_tag condition
+        elif query_stars == 0:
+            statement = (
+                "select r.recipeID, r.title, r.numServings, r.postedBy, ra.avgstars "
+                "from recipe r "
+                "left join recipetag rt on r.recipeID = rt.recipeID "
+                "left join recipe_avgstars ra on r.recipeID = ra.recipeID "
+                "where rt.tagText = %(query_tag)s"
+            )
+        # case: query_tag condition and query_stars condition
+        elif query_operator == "and":
+            statement = (
+                "select r.recipeID, r.title, r.numServings, r.postedBy, ra.avgstars "
+                "from recipe r "
+                "left join recipetag rt on r.recipeID = rt.recipeID "
+                "left join recipe_avgstars ra on r.recipeID = ra.recipeID "
+                "where rt.tagText = %(query_tag)s and ra.avgstars > %(query_stars)s"
+            )
+        # case: query_tag condition or query_stars condition
+        elif query_operator == "or":
+            statement = (
+                "select r.recipeID, r.title, r.numServings, r.postedBy, ra.avgstars "
+                "from recipe r "
+                "left join recipetag rt on r.recipeID = rt.recipeID "
+                "left join recipe_avgstars ra on r.recipeID = ra.recipeID "
+                "where rt.tagText = %(query_tag)s or ra.avgstars > %(query_stars)s"
+            )
+
+        # run the query
+        try:
+            cursor.execute(statement, data)
+            results = cursor.fetchall()
+        except pymysql.InternalError as err:
+            print("Error from MySQL: {}".format(err))
+            raise SelfException(err, status_code=502)
+        return render_template('search_recipes_result.html', results=results)
 
 
 class SelfException(Exception):
