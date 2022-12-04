@@ -37,7 +37,7 @@
     <h3>Search Results: </h3>
     {% for result in results -%}
     <div style="background-color:#1aff00;clear:both;text-align:left;">
-        <a href="/SearchRecipeDetail/%d'%result.recipeID">
+        <a href="{{'/SearchRecipeDetail/%s'%result.recipeID}}">
             <h3 >{{ result.recipeID }}, {{ result.title }} </h3>
         </a>
         <p>

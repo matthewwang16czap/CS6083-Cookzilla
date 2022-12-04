@@ -428,13 +428,42 @@ def search_recipe_detail(recipeID):
         'reviews': [],  # list of reviews dicts of username, title, description, stars, and photoURLs
         'Steps': []  # list of steps dicts of stepNo and description
     }
-    # prepare query
+    # prepare queries to get all recipe_detail
     cursor = conn.cursor()
+
+    # run the query
     statement = (
         "select title, numServings, postedBy "
         "from recipe "
         "where recipeID = %(recipeID)s"
     )
+    try:
+        cursor.execute(statement, recipe_detail)
+        result = cursor.fetchone()
+        print(result)
+        result = result[0]
+        recipe_detail['title'] = result['title']
+        recipe_detail['numServings'] = result['numServings']
+        recipe_detail['postedBy'] = result['postedBy']
+    except pymysql.InternalError as err:
+        print("Error from MySQL: {}".format(err))
+        raise SelfException(err, status_code=502)
+
+    # run the query
+    statement = (
+        "select iName "
+        "from recipeingredient "
+        "where recipeID = %(recipeID)s"
+    )
+    try:
+        cursor.execute(statement, recipe_detail)
+        for result in cursor:
+            recipe_detail['ingredients'].append(result['iName'])
+    except pymysql.InternalError as err:
+        print("Error from MySQL: {}".format(err))
+        raise SelfException(err, status_code=502)
+
+    print(recipe_detail)
     return render_template('recipe_detail.html')
 
 
