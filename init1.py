@@ -415,7 +415,7 @@ def search_recipes_result():
 
 @app.route('/RecipeDetail')
 def recipe_detail():
-    return render_template('search_recipes.html')
+    return render_template('recipe_detail.html')
 
 
 class SelfException(Exception):
