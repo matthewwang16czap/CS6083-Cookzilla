@@ -413,8 +413,28 @@ def search_recipes_result():
         return render_template('search_recipes_result.html', results=results)
 
 
-@app.route('/RecipeDetail')
-def recipe_detail():
+@app.route('/SearchRecipeDetail/<recipeID>')
+def search_recipe_detail(recipeID):
+    recipe_detail = {
+        'recipeID': recipeID,
+        'title': "",
+        'numServings': "",
+        'postedBy': "",
+        'ingredients': [],  # list of ingredients names
+        'avgStars': "",
+        'pictureURLs': [],  # list of pictureURLs to trace the pictures
+        'tags': [],  # list of tags
+        'relatedRecipes': [],  # list of related Recipes dicts of ids and names
+        'reviews': [],  # list of reviews dicts of username, title, description, stars, and photoURLs
+        'Steps': []  # list of steps dicts of stepNo and description
+    }
+    # prepare query
+    cursor = conn.cursor()
+    statement = (
+        "select title, numServings, postedBy "
+        "from recipe "
+        "where recipeID = %(recipeID)s"
+    )
     return render_template('recipe_detail.html')
 
 
