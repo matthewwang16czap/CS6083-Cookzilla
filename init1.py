@@ -413,6 +413,11 @@ def search_recipes_result():
         return render_template('search_recipes_result.html', results=results)
 
 
+@app.route('/RecipeDetail')
+def recipe_detail():
+    return render_template('search_recipes.html')
+
+
 class SelfException(Exception):
     def __init__(self, message, status_code=400):
         Exception.__init__(self)

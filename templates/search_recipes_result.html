@@ -37,7 +37,7 @@
     <h3>Search Results: </h3>
     {% for result in results -%}
     <div id="footer" style="background-color:#1aff00;clear:both;text-align:left;">
-        <h3>{{ result.recipeID }}, {{ result.title }} </h3>
+        <h3 href="localhost:5000/RecipeDetail">{{ result.recipeID }}, {{ result.title }} </h3>
         <p>
             number of servings: {{ result.numServings }}, posted by: {{ result.postedBy }} <br>
             {% if result.avgstars >= 4.9 %}
