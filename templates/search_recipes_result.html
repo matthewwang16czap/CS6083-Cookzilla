@@ -36,7 +36,7 @@
     <!--show the results line by line-->
     <h3>Search Results: </h3>
     {% for result in results -%}
-    <div id="footer" style="background-color:#1aff00;clear:both;text-align:left;">
+    <div style="background-color:#1aff00;clear:both;text-align:left;">
         <a href="localhost:5000/RecipeDetail">
             <h3 >{{ result.recipeID }}, {{ result.title }} </h3>
         </a>

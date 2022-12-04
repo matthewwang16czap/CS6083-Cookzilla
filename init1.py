@@ -410,7 +410,7 @@ def search_recipes_result():
         except pymysql.InternalError as err:
             print("Error from MySQL: {}".format(err))
             raise SelfException(err, status_code=502)
-        return render_template('search_recipes_result.html', results=results)
+        return render_template('home.html', results=results)
 
 
 @app.route('/RecipeDetail')
