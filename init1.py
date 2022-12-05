@@ -8,13 +8,14 @@ from app import app
 from werkzeug.utils import secure_filename
 import os
 
-ALLOWED_EXTENSIONS = set(['png', 'jpg', 'jpeg', 'gif'])
+
+ALLOWED_EXTENSIONS = set(['txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif'])
 
 # hash password and salt
 salt = "6083database"
 
 # Configure MySQL
-'''
+
 conn = pymysql.connect(host='localhost',
                        port=3306,
                        user='holly',
@@ -22,14 +23,14 @@ conn = pymysql.connect(host='localhost',
                        db='Cookzilla',
                        charset='utf8mb4',
                        cursorclass=pymysql.cursors.DictCursor)
-'''
-conn = pymysql.connect(host='localhost',
-                       port=3306,
-                       user='Sihan',
-                       password='Wsh010217',
-                       db='cs6083_project',
-                       charset='utf8mb4',
-                       cursorclass=pymysql.cursors.DictCursor)
+
+# conn = pymysql.connect(host='localhost',
+#                        port=3306,
+#                        user='Sihan',
+#                        password='Wsh010217',
+#                        db='cs6083_project',
+#                        charset='utf8mb4',
+#                        cursorclass=pymysql.cursors.DictCursor)
 
 
 def allowed_image(filename):
@@ -328,7 +329,7 @@ def post_recipe():
 
         # insert into recipepicture table
         for file in pictures:
-            if file and allowed_file(file.filename):
+            if file and allowed_image(file.filename):
                 filename = secure_filename(file.filename)
                 file_dir = os.path.join(
                     app.config['UPLOAD_RECIPE_FOLDER'], str(recipeID))
@@ -342,7 +343,7 @@ def post_recipe():
                 cursor.execute(query, (recipeID, str(file_url)))
                 conn.commit()
             else:
-                flash('Allowed file types are txt, pdf, png, jpg, jpeg, gif')
+                flash('Allowed image types are png, jpg, jpeg, gif')
         cursor.close()
 
     return render_template('post_recipe.html', ingredient=ingredient, unit=unit)
@@ -411,6 +412,66 @@ def search_recipes_result():
             print("Error from MySQL: {}".format(err))
             raise SelfException(err, status_code=502)
         return render_template('search_recipes_result.html', results=results)
+
+
+@app.route('/postReview/<recipeID>', methods=['GET', 'POST'])
+def post_review(recipeID):
+    # recipeID = request.args['recipeID']
+    if request.method == "GET":
+        return render_template('post_review.html', recipeID=recipeID)
+    if request.method == "POST":
+        username = checkUserLogin()
+        if not username:
+            return redirect(url_for('login'))
+        else:
+            cursor = conn.cursor()
+            pictures = request.files.getlist('pictures')
+            # check pictures
+            for file in pictures:
+                print(file)
+                if file and not(allowed_image(file.filename)):
+                    flash('Allowed image types are png, jpg, jpeg, gif')
+                    return render_template('post_review.html', recipeID=recipeID)
+            # check if the user have already posted review of this recipe
+            query = 'SELECT * FROM Review WHERE userName = %s AND recipeID = %s;'
+            cursor.execute(query, (username, recipeID))
+            data = cursor.fetchone()
+            if data:
+                # update
+                query = 'UPDATE Review SET revTitle = %s, revDesc = %s, stars = %s WHERE userName = %s AND recipeID = %s;'
+                cursor.execute(
+                    query, (request.form['revTitle'], request.form['revDesc'], request.form['stars'], username, recipeID))
+                conn.commit()
+                query = 'DELETE FROM ReviewPicture WHERE userName = %s AND recipeID = %s;'
+                cursor.execute(
+                    query, (username, recipeID))
+                conn.commit()
+
+            else:
+                # insert
+                query = 'INSERT INTO Review(userName, recipeID, revTitle, revDesc, stars) VALUES (%s, %s, %s, %s, %s);'
+                cursor.execute(
+                    query, (username, recipeID, request.form['revTitle'], request.form['revDesc'], request.form['stars']))
+                conn.commit()
+            # upload review pictures
+            for file in pictures:
+                if file:
+                    filename = secure_filename(file.filename)
+                    file_dir = os.path.join(
+                        app.config['UPLOAD_REVIEW_FOLDER'], str(recipeID), str(username))
+                    file_url = os.path.join(
+                        app.config['UPLOAD_REVIEW_FOLDER'], str(recipeID), str(username), filename)
+                    print(file_dir)
+                    print(file_url)
+                    if not os.path.exists(file_dir):
+                        os.makedirs(file_dir)
+                    file.save(file_url)
+                    # flash('File successfully uploaded')
+                    query = 'INSERT INTO ReviewPicture (username,recipeID,pictureURL) VALUES (%s, %s, %s)'
+                    cursor.execute(query, (username, recipeID, str(file_url)))
+                    conn.commit()
+            cursor.close()
+            return redirect(url_for('home'))
 
 
 class SelfException(Exception):
