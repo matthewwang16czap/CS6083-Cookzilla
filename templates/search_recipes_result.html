@@ -36,8 +36,10 @@
     <!--show the results line by line-->
     <h3>Search Results: </h3>
     {% for result in results -%}
-    <div id="footer" style="background-color:#1aff00;clear:both;text-align:left;">
-        <h3>{{ result.recipeID }}, {{ result.title }} </h3>
+    <div style="background-color:#1aff00;clear:both;text-align:left;">
+        <a href="{{'/SearchRecipeDetail/%s'%result.recipeID}}">
+            <h3 >{{ result.recipeID }}, {{ result.title }} </h3>
+        </a>
         <p>
             number of servings: {{ result.numServings }}, posted by: {{ result.postedBy }} <br>
             {% if result.avgstars >= 4.9 %}

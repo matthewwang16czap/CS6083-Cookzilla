@@ -8,7 +8,8 @@ from app import app
 from werkzeug.utils import secure_filename
 import os
 
-ALLOWED_EXTENSIONS = set(['png', 'jpg', 'jpeg', 'gif'])
+
+ALLOWED_EXTENSIONS = set(['txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif'])
 
 # hash password and salt
 salt = "6083database"
@@ -24,12 +25,12 @@ conn = pymysql.connect(host='localhost',
                        cursorclass=pymysql.cursors.DictCursor)
 '''
 conn = pymysql.connect(host='localhost',
-                       port=3306,
-                       user='Sihan',
-                       password='Wsh010217',
-                       db='cs6083_project',
-                       charset='utf8mb4',
-                       cursorclass=pymysql.cursors.DictCursor)
+                        port=3306,
+                        user='Sihan',
+                        password='Wsh010217',
+                        db='cs6083_project',
+                        charset='utf8mb4',
+                        cursorclass=pymysql.cursors.DictCursor)
 
 
 def allowed_image(filename):
@@ -328,7 +329,7 @@ def post_recipe():
 
         # insert into recipepicture table
         for file in pictures:
-            if file and allowed_file(file.filename):
+            if file and allowed_image(file.filename):
                 filename = secure_filename(file.filename)
                 file_dir = os.path.join(
                     app.config['UPLOAD_RECIPE_FOLDER'], str(recipeID))
@@ -342,7 +343,7 @@ def post_recipe():
                 cursor.execute(query, (recipeID, str(file_url)))
                 conn.commit()
             else:
-                flash('Allowed file types are txt, pdf, png, jpg, jpeg, gif')
+                flash('Allowed image types are png, jpg, jpeg, gif')
         cursor.close()
 
     return render_template('post_recipe.html', ingredient=ingredient, unit=unit)
@@ -411,6 +412,246 @@ def search_recipes_result():
             print("Error from MySQL: {}".format(err))
             raise SelfException(err, status_code=502)
         return render_template('search_recipes_result.html', results=results)
+
+
+@app.route('/SearchRecipeDetail/<recipeID>')
+def search_recipe_detail(recipeID):
+
+    # sample: {'recipeID': '2', 'title': 'Test1', 'numServings': 1, 'postedBy': 'Sihan', 'ingredients': {'beef': {'unitName': 'lb', 'amount': Decimal('2')}}, 'avgStars': Decimal('3.3333'), 'pictureURLs': ['/test/TestURL'], 'tags': ['fry'], 'relatedRecipes': {}, 'reviews': {'Sihan': {'revTitle': None, 'revDesc': None, 'stars': 5, 'pictureURLs': ['/test/TestURL']}, 'Sihan2': {'revTitle': None, 'revDesc': None, 'stars': 4, 'pictureURLs': []}, 'Sihan3': {'revTitle': None, 'revDesc': None, 'stars': 1, 'pictureURLs': []}}, 'Steps': {1: {'sDesc': 'do first thing'}, 2: {'sDesc': 'do second thing'}}}
+
+    recipe_detail = {
+        'recipeID': recipeID,
+        'title': "",
+        'numServings': "",
+        'postedBy': "",
+        'ingredients': {},  # dict of ingredients dict
+        'avgStars': "",
+        'pictureURLs': [],  # list of pictureURLs to trace the pictures
+        'tags': [],  # list of tags
+        'relatedRecipes': {},  # dict of related Recipes dicts of ids and names
+        'reviews': {},  # dict of reviews dicts of username, title, description, stars, and photoURLs
+        'Steps': {}  # dict of steps dicts of stepNo and description
+    }
+    # prepare queries to get all recipe_detail
+    cursor = conn.cursor()
+
+    # run the query
+    statement = (
+        "select title, numServings, postedBy, avgstars "
+        "from recipe_avgstars "
+        "where recipeID = %s"
+    )
+    try:
+        cursor.execute(statement, recipeID)
+        result = cursor.fetchone()
+        recipe_detail['title'] = result['title']
+        recipe_detail['numServings'] = result['numServings']
+        recipe_detail['postedBy'] = result['postedBy']
+        recipe_detail['avgStars'] = result['avgstars']
+    except pymysql.InternalError as err:
+        print("Error from MySQL: {}".format(err))
+        raise SelfException(err, status_code=502)
+
+    # run the query
+    statement = (
+        "select iName, unitName, amount "
+        "from recipeingredient "
+        "where recipeID = %s"
+    )
+    try:
+        cursor.execute(statement, recipeID)
+        results = cursor.fetchall()
+        for result in results:
+            ingredient = {
+                'unitName': result['unitName'],
+                'amount': result['amount']
+            }
+            recipe_detail['ingredients'][result['iName']] = ingredient
+    except pymysql.InternalError as err:
+        print("Error from MySQL: {}".format(err))
+        raise SelfException(err, status_code=502)
+
+    # run the query
+    statement = (
+        "select pictureURL "
+        "from recipepicture "
+        "where recipeID = %s"
+    )
+    try:
+        cursor.execute(statement, recipeID)
+        results = cursor.fetchall()
+        for result in results:
+            recipe_detail['pictureURLs'].append(result['pictureURL'])
+    except pymysql.InternalError as err:
+        print("Error from MySQL: {}".format(err))
+        raise SelfException(err, status_code=502)
+
+    # run the query
+    statement = (
+        "select tagText "
+        "from recipetag "
+        "where recipeID = %s"
+    )
+    try:
+        cursor.execute(statement, recipeID)
+        results = cursor.fetchall()
+        for result in results:
+            recipe_detail['tags'].append(result['tagText'])
+    except pymysql.InternalError as err:
+        print("Error from MySQL: {}".format(err))
+        raise SelfException(err, status_code=502)
+
+    # run the query
+    statement = (
+        "select recipe1, recipe2 "
+        "from relatedrecipe "
+        "where recipe1 = %s or recipe2 = %s"
+    )
+    try:
+        cursor.execute(statement, (recipeID, recipeID))
+        results = cursor.fetchall()
+        related_recipes_ids = []
+        for result in results:
+            # get related recipes ids
+            if result['recipe1'] == recipeID:
+                related_recipes_ids.append(str(result['recipe2']))
+            else:
+                related_recipes_ids.append(str(result['recipe1']))
+        # remove duplicates and itself
+        related_recipes_ids = set(related_recipes_ids)
+        related_recipes_ids.discard(recipeID)
+        # get recipe title of each id, put the info
+        for related_recipe_id in related_recipes_ids:
+            statement = (
+                "select title "
+                "from recipe "
+                "where recipeID = %s"
+            )
+            cursor.execute(statement, related_recipes_ids)
+            result = cursor.fetchone()
+            related_recipe_info = {
+                'title': result['title']
+            }
+            recipe_detail['relatedRecipes'][related_recipe_id] = related_recipe_info
+    except pymysql.InternalError as err:
+        print("Error from MySQL: {}".format(err))
+        raise SelfException(err, status_code=502)
+
+    # run the query
+    statement = (
+        "select userName, revTitle, revDesc, stars "
+        "from review "
+        "where recipeID = %s"
+    )
+    try:
+        cursor.execute(statement, recipeID)
+        results = cursor.fetchall()
+        for result in results:
+            review = {
+                'revTitle': result['revTitle'],
+                'revDesc': result['revDesc'],
+                'stars': result['stars'],
+                'pictureURLs': []
+            }
+            recipe_detail['reviews'][result['userName']] = review
+    except pymysql.InternalError as err:
+        print("Error from MySQL: {}".format(err))
+        raise SelfException(err, status_code=502)
+
+    # run the query
+    statement = (
+        "select userName, pictureURL "
+        "from reviewpicture "
+        "where recipeID = %s"
+    )
+    try:
+        cursor.execute(statement, recipeID)
+        results = cursor.fetchall()
+        for result in results:
+            recipe_detail['reviews'][result['userName']]['pictureURLs'].append(result['pictureURL'])
+    except pymysql.InternalError as err:
+        print("Error from MySQL: {}".format(err))
+        raise SelfException(err, status_code=502)
+
+    # run the query
+    statement = (
+        "select stepNo, sDesc "
+        "from step "
+        "where recipeID = %s"
+    )
+    try:
+        cursor.execute(statement, recipeID)
+        results = cursor.fetchall()
+        for result in results:
+            step_info = {
+                'sDesc': result['sDesc']
+            }
+            recipe_detail['Steps'][result['stepNo']] = step_info
+    except pymysql.InternalError as err:
+        print("Error from MySQL: {}".format(err))
+        raise SelfException(err, status_code=502)
+
+    print(recipe_detail)
+    return render_template('recipe_detail.html', recipe_detail=recipe_detail)
+
+@app.route('/postReview/<recipeID>', methods=['GET', 'POST'])
+def post_review(recipeID):
+    # recipeID = request.args['recipeID']
+    if request.method == "GET":
+        return render_template('post_review.html', recipeID=recipeID)
+    if request.method == "POST":
+        username = checkUserLogin()
+        if not username:
+            return redirect(url_for('login'))
+        else:
+            cursor = conn.cursor()
+            pictures = request.files.getlist('pictures')
+            # check pictures
+            for file in pictures:
+                print(file)
+                if file and not(allowed_image(file.filename)):
+                    flash('Allowed image types are png, jpg, jpeg, gif')
+                    return render_template('post_review.html', recipeID=recipeID)
+            # check if the user have already posted review of this recipe
+            query = 'SELECT * FROM Review WHERE userName = %s AND recipeID = %s;'
+            cursor.execute(query, (username, recipeID))
+            data = cursor.fetchone()
+            if data:
+                # update
+                query = 'UPDATE Review SET revTitle = %s, revDesc = %s, stars = %s WHERE userName = %s AND recipeID = %s;'
+                cursor.execute(
+                    query, (request.form['revTitle'], request.form['revDesc'], request.form['stars'], username, recipeID))
+                conn.commit()
+                query = 'DELETE FROM ReviewPicture WHERE userName = %s AND recipeID = %s;'
+                cursor.execute(
+                    query, (username, recipeID))
+                conn.commit()
+
+            else:
+                # insert
+                query = 'INSERT INTO Review(userName, recipeID, revTitle, revDesc, stars) VALUES (%s, %s, %s, %s, %s);'
+                cursor.execute(
+                    query, (username, recipeID, request.form['revTitle'], request.form['revDesc'], request.form['stars']))
+                conn.commit()
+            # upload review pictures
+            for file in pictures:
+                if file:
+                    filename = secure_filename(file.filename)
+                    file_dir = os.path.join(
+                        app.config['UPLOAD_REVIEW_FOLDER'], str(recipeID), str(username))
+                    file_url = os.path.join(
+                        app.config['UPLOAD_REVIEW_FOLDER'], str(recipeID), str(username), filename)
+                    print(file_dir)
+                    print(file_url)
+                    if not os.path.exists(file_dir):
+                        os.makedirs(file_dir)
+                    file.save(file_url)
+                    # flash('File successfully uploaded')
+                    query = 'INSERT INTO ReviewPicture (username,recipeID,pictureURL) VALUES (%s, %s, %s)'
+                    cursor.execute(query, (username, recipeID, str(file_url)))
+                    conn.commit()
+            cursor.close()
+            return redirect(url_for('home'))
 
 
 class SelfException(Exception):
