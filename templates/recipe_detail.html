@@ -6,8 +6,97 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cookzilla Project</title>
+    <style>
+        .closer_header{
+            margin-bottom: 5px;
+            margin-top: 5px;
+        }
+        .flex_parent {
+            display: flex;
+            flex-wrap: wrap;
+            width: 300px;
+            
+        }
+        .four_per_row{
+            flex: 1 0 21%;
+            margin: 5px;
+            height: 250px;
+            border: 1px;
+            border-style: dashed;
+        }
+        .ellipsis {
+            height: 120px;
+            margin: 5px;
+        }
+        .closer_p{
+            margin-bottom: 3px;
+            margin-top: 3px;
+            text-align: center;
+        }
+    </style>
 </head>
 
 <body>
-    <h1>Recipe Details: </h1>
+    <a href="/">Back</a></br>
+    <h1>{{data.title}}</h1>
+    <h4 class="closer_header">Author: {{data.postedBy}}</h4>
+    <h4 class="closer_header">Number of Servings: {{data.numServings}} &emsp; Average Rating: {{data.avgStars}}</h4>
+    <h4 class="closer_header">Tag:
+        {{ data.tags|join(', ') }}
+    </h4>
+    {% if data.pictureURLs|length > 0 %}
+    <div id="picture_container" style="margin-top: 10px;">
+        {% for picture in data.pictureURLs %}
+        <div style="display:inline-block; height: 150px; width: 200px;">
+            <img src="{{ url_for('static', filename=picture) }}" alt="recipe_picture" style="height:100%; display: block;margin-left: auto;margin-right: auto;">
+        </div>
+        {% endfor %}
+    <div id="ingredient_container">
+    {% endif %}
+        <h3>&#x2022; Ingredients</h3>
+        <table>
+            <thead>
+                <th style="min-width:200px; text-align:left;">Ingredient</th>
+                <th>Amount</th>
+            </thead>
+            <tbody>
+                {% for i in data.ingredients %}
+                    <tr>
+                        <td>{{i}}</td>
+                        <td>{{data.ingredients[i]['amount']}}&nbsp;{{data.ingredients[i]['unitName']}}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div id="step_container">
+        <h3>&#x2022; Steps</h3>
+        <ol>
+            {% for i in data.Steps %}
+            <li>{{data.Steps[i]['sDesc']}}</li>
+            {% endfor %}
+          </ol>
+    </div>
+
+    <div id="review_container">
+        <h3 style="display: inline;">&#x2022; Reviews</h3> <button onclick="window.location.href='{{ url_for('post_review', recipeID=recipeID) }}'">Post Review</button>
+        <div class="flex_parent">
+            {% for i in data.reviews %}
+            <div class="four_per_row">            
+                {% if data.reviews[i]['pictureURLs']|length > 0 %}
+                    <img src="{{ url_for('static', filename=data.reviews[i]['pictureURLs'][0]) }}" alt="review_picture" style="height:80px;display: block;margin-left: auto;margin-right: auto;">
+                {% endif %}
+                <p class="closer_p" style="font-weight: bold;">{{data.reviews[i]['revTitle']}}</p>
+                <p class="closer_p">
+                {% for i in range(0, data.reviews[i]['stars'])%}&#9733;{% endfor %}{%for i in range(0, 5-data.reviews[i]['stars'])%}&#9734;{% endfor %}
+                </p>
+                <p class="ellipsis">{{data.reviews[i]['revDesc']}}</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    <!-- <div id="related_recipe_container">
+        <h3>&#x2022; Related Recipes</h3>
+        
+    </div> -->
 </body>

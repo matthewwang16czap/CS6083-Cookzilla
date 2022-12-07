@@ -1,12 +1,13 @@
 # Import Flask Library
 import hashlib
-from flask import Flask, render_template, request, session, url_for, redirect, flash, jsonify, make_response
+from flask import Flask, render_template, request, session, url_for, redirect, flash, jsonify, make_response, send_from_directory
 import pymysql.cursors
 
 # for uploading photo:
 from app import app
 from werkzeug.utils import secure_filename
 import os
+import html
 
 
 ALLOWED_EXTENSIONS = set(['txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif'])
@@ -15,7 +16,7 @@ ALLOWED_EXTENSIONS = set(['txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif'])
 salt = "6083database"
 
 # Configure MySQL
-'''
+
 conn = pymysql.connect(host='localhost',
                        port=3306,
                        user='holly',
@@ -23,14 +24,14 @@ conn = pymysql.connect(host='localhost',
                        db='Cookzilla',
                        charset='utf8mb4',
                        cursorclass=pymysql.cursors.DictCursor)
-'''
-conn = pymysql.connect(host='localhost',
-                        port=3306,
-                        user='Sihan',
-                        password='Wsh010217',
-                        db='cs6083_project',
-                        charset='utf8mb4',
-                        cursorclass=pymysql.cursors.DictCursor)
+
+# conn = pymysql.connect(host='localhost',
+#                         port=3306,
+#                         user='Sihan',
+#                         password='Wsh010217',
+#                         db='cs6083_project',
+#                         charset='utf8mb4',
+#                         cursorclass=pymysql.cursors.DictCursor)
 
 
 def allowed_image(filename):
@@ -332,15 +333,17 @@ def post_recipe():
             if file and allowed_image(file.filename):
                 filename = secure_filename(file.filename)
                 file_dir = os.path.join(
-                    app.config['UPLOAD_RECIPE_FOLDER'], str(recipeID))
+                    'static', app.config['UPLOAD_RECIPE_FOLDER'], str(recipeID))
                 file_url = os.path.join(
+                    'static', app.config['UPLOAD_RECIPE_FOLDER'], str(recipeID), filename)
+                save_url = os.path.join(
                     app.config['UPLOAD_RECIPE_FOLDER'], str(recipeID), filename)
                 if not os.path.exists(file_dir):
                     os.makedirs(file_dir)
                 file.save(file_url)
                 # flash('File successfully uploaded')
                 query = 'INSERT INTO RecipePicture (recipeID,pictureURL) VALUES (%s, %s)'
-                cursor.execute(query, (recipeID, str(file_url)))
+                cursor.execute(query, (recipeID, str(save_url)))
                 conn.commit()
             else:
                 flash('Allowed image types are png, jpg, jpeg, gif')
@@ -481,7 +484,8 @@ def search_recipe_detail(recipeID):
         cursor.execute(statement, recipeID)
         results = cursor.fetchall()
         for result in results:
-            recipe_detail['pictureURLs'].append(result['pictureURL'])
+            recipe_detail['pictureURLs'].append(
+                result['pictureURL'].replace('\\', '/'))
     except pymysql.InternalError as err:
         print("Error from MySQL: {}".format(err))
         raise SelfException(err, status_code=502)
@@ -568,7 +572,8 @@ def search_recipe_detail(recipeID):
         cursor.execute(statement, recipeID)
         results = cursor.fetchall()
         for result in results:
-            recipe_detail['reviews'][result['userName']]['pictureURLs'].append(result['pictureURL'])
+            recipe_detail['reviews'][result['userName']]['pictureURLs'].append(
+                result['pictureURL'].replace('\\', '/'))
     except pymysql.InternalError as err:
         print("Error from MySQL: {}".format(err))
         raise SelfException(err, status_code=502)
@@ -591,8 +596,8 @@ def search_recipe_detail(recipeID):
         print("Error from MySQL: {}".format(err))
         raise SelfException(err, status_code=502)
 
-    print(recipe_detail)
-    return render_template('recipe_detail.html', recipe_detail=recipe_detail)
+    return render_template('recipe_detail.html', data=recipe_detail, recipeID=recipeID)
+
 
 @app.route('/postReview/<recipeID>', methods=['GET', 'POST'])
 def post_review(recipeID):
@@ -608,7 +613,6 @@ def post_review(recipeID):
             pictures = request.files.getlist('pictures')
             # check pictures
             for file in pictures:
-                print(file)
                 if file and not(allowed_image(file.filename)):
                     flash('Allowed image types are png, jpg, jpeg, gif')
                     return render_template('post_review.html', recipeID=recipeID)
@@ -638,17 +642,17 @@ def post_review(recipeID):
                 if file:
                     filename = secure_filename(file.filename)
                     file_dir = os.path.join(
-                        app.config['UPLOAD_REVIEW_FOLDER'], str(recipeID), str(username))
+                        'static', app.config['UPLOAD_REVIEW_FOLDER'], str(recipeID), str(username))
                     file_url = os.path.join(
+                        'static', app.config['UPLOAD_REVIEW_FOLDER'], str(recipeID), str(username), filename)
+                    save_url = os.path.join(
                         app.config['UPLOAD_REVIEW_FOLDER'], str(recipeID), str(username), filename)
-                    print(file_dir)
-                    print(file_url)
                     if not os.path.exists(file_dir):
                         os.makedirs(file_dir)
                     file.save(file_url)
                     # flash('File successfully uploaded')
                     query = 'INSERT INTO ReviewPicture (username,recipeID,pictureURL) VALUES (%s, %s, %s)'
-                    cursor.execute(query, (username, recipeID, str(file_url)))
+                    cursor.execute(query, (username, recipeID, str(save_url)))
                     conn.commit()
             cursor.close()
             return redirect(url_for('home'))
