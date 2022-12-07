@@ -26,13 +26,13 @@
                 <option value={{u.unitName}}>{{u.unitName}}</option>
                 {% endfor %}
             </select></td>
-            <td><input type="number" step="0.01" name="amount" /></td>
+            <td><input type="number" step="0.01" name="amount" required/></td>
         </tr>
     </table>
     <button type="button" onclick="addIngredient()">Add Ingredient</button>
 
     <div id="tags" style="min-height: 50px;">Tags:<br>
-    <input type="text" name="tag" />
+    <input type="text" name="tag" required/>
     </div>
     <button type="button" onclick="addTag()">Add a Tag</button>
 
@@ -42,7 +42,7 @@
         <th style="width:90%">Desciption</th>
         <tr>
             <td>1</td>
-            <td><input type="text" name="step"/></td>
+            <td><input type="text" name="step" required/></td>
         </tr>
     </table>
     <button type="button" onclick="addStep()">Add Step</button>
