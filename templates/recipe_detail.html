@@ -14,8 +14,7 @@
         .flex_parent {
             display: flex;
             flex-wrap: wrap;
-            width: 300px;
-            
+            width: 300px;            
         }
         .four_per_row{
             flex: 1 0 21%;
@@ -48,6 +47,98 @@
     <div id="picture_container" style="margin-top: 10px;">
         {% for picture in data.pictureURLs %}
         <div style="display:inline-block; height: 150px; width: 200px;">
+            <img src="{{ url_for('static', filename=picture) }}" alt="recipe_picture"
+                style="height:100%; display: block;margin-left: auto;margin-right: auto;">
+        </div>
+        {% endfor %}
+        <div id="ingredient_container">
+            {% endif %}
+            <h3>&#x2022; Ingredients</h3>
+            <table>
+                <thead>
+                    <th style="min-width:200px; text-align:left;">Ingredient</th>
+                    <th style="width:200px;text-align:left;">Amount</th>
+                </thead>
+                <tbody>
+                    {% for i in data.ingredients %}
+                    <tr>
+                        <td>{{i}}</td>
+                        <td><span
+                                amount="{{data.ingredients[i]['amount']}}">{{data.ingredients[i]['amount']}}</span>&nbsp;
+                            <select onchange="changeUnit(event)" onfocus="this.oldvalue = this.value;">
+                                <option value={{data.ingredients[i]['unitName']}}>{{data.ingredients[i]['unitName']}}
+                                </option>
+                                {% for u in data.unitConversions[data.ingredients[i]['unitName']] %}
+                                <option value={{u['name']}}>{{u['name']}}</option>
+                                {% endfor %}
+                            </select>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div id="step_container">
+            <h3>&#x2022; Steps</h3>
+            <ol>
+                {% for i in data.Steps %}
+                <li>{{data.Steps[i]['sDesc']}}</li>
+                {% endfor %}
+            </ol>
+        </div>
+
+        <div id="review_container">
+            <h3 style="display: inline;">&#x2022; Reviews</h3>
+            <button onclick="window.location.href='{{ url_for('post_review', recipeID=recipeID) }}'">Post
+                Review</button>
+            <div class="flex_parent">
+                {% for i in data.reviews %}
+                <div class="four_per_row">
+                    {% if data.reviews[i]['pictureURLs']|length > 0 %}
+                    <img src="{{ url_for('static', filename=data.reviews[i]['pictureURLs'][0]) }}" alt="review_picture"
+                        style="height:80px;display: block;margin-left: auto;margin-right: auto;">
+                    {% endif %}
+                    <p class="closer_p" style="font-weight: bold;">{{data.reviews[i]['revTitle']}}</p>
+                    <p class="closer_p">
+                        {% for i in range(0, data.reviews[i]['stars'])%}&#9733;{% endfor %}{%for i in range(0,
+                        5-data.reviews[i]['stars'])%}&#9734;{% endfor %}
+                    </p>
+                    <p class="ellipsis">{{data.reviews[i]['revDesc']}}</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        <!-- <div id="related_recipe_container">
+        <h3>&#x2022; Related Recipes</h3>
+
+    </div> -->
+        <script>
+            var changeUnit = function (event) {
+                var selectElement = event.target;
+                var oldvalue = selectElement.oldvalue;
+                var newvalue = selectElement.value;
+                var amount_span = selectElement.previousSibling.previousSibling;
+                var unitConversion = JSON.parse('{{data.unitConversions|tojson}}');
+                for (var i in unitConversion[oldvalue]) {
+                    if (unitConversion[oldvalue][i]['name'] == newvalue) {
+                        oldamount = amount_span.getAttribute('amount');
+                        newamount = oldamount * unitConversion[oldvalue][i]['ratio']
+                        amount_span.setAttribute('amount', newamount);
+                        if (Number.isInteger(newamount)) {
+                            amount_span.innerText = newamount.toFixed(0);
+                        }
+                        else {
+                            amount_span.innerText = newamount.toFixed(2);
+                        }
+                    }
+                }
+                selectElement.oldvalue = newvalue;
+            }
+        </script>
+
+</body>
+
+</html>
             <img src="{{ url_for('static', filename=picture) }}" alt="recipe_picture" style="height:100%; display: block;margin-left: auto;margin-right: auto;">
         </div>
         {% endfor %}
@@ -95,8 +186,4 @@
             {% endfor %}
         </div>
     </div>
-    <!-- <div id="related_recipe_container">
-        <h3>&#x2022; Related Recipes</h3>
-        
-    </div> -->
 </body>
