@@ -40,3 +40,5 @@ insert into unitconversion (sourceUnit, destinationUnit, ratio)
 values ('kg', 'oz',35.274);
 insert into unitconversion (sourceUnit, destinationUnit, ratio)
 values ('kg', 'lb',2.2);
+insert into unitconversion (sourceUnit, destinationUnit, ratio)
+values ('lb', 'g',453.592);

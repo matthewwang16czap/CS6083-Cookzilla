@@ -1,4 +1,5 @@
 # Import Flask Library
+import decimal
 import hashlib
 from flask import Flask, render_template, request, session, url_for, redirect, flash, jsonify, make_response, send_from_directory
 import pymysql.cursors
@@ -9,6 +10,9 @@ from werkzeug.utils import secure_filename
 import os
 import html
 
+# seletable units
+mass_selection = ['g', 'kg', 'mg', 'oz', 'lb', 'none']
+volume_selection = ['fl oz', 'l', 'ml', 'pt', 'none']
 
 ALLOWED_EXTENSIONS = set(['txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif'])
 
@@ -434,10 +438,29 @@ def search_recipe_detail(recipeID):
         'relatedRecipes': {},  # dict of related Recipes dicts of ids and names
         'reviews': {},  # dict of reviews dicts of username, title, description, stars, and photoURLs
         'Steps': {},  # dict of steps dicts of stepNo and description
-        'unitConversions': {}
+        'unitConversions': {},
+        'preferunits':{}
     }
     # prepare queries to get all recipe_detail
     cursor = conn.cursor()
+
+    # find unit preference
+    username = checkUserLogin()
+    if username is not None:
+        # run the query
+        statement = (
+            "select userName, unitName, unitType "
+            "from preferunits "
+            "where userName = %s "
+        )
+        try:
+            cursor.execute(statement, username)
+            results = cursor.fetchall()
+            for result in results:
+                recipe_detail['preferunits'][result['unitType']] = result['unitName']
+        except pymysql.InternalError as err:
+            print("Error from MySQL: {}".format(err))
+            raise SelfException(err, status_code=502)
 
     # run the query
     statement = (
@@ -452,25 +475,6 @@ def search_recipe_detail(recipeID):
         recipe_detail['numServings'] = result['numServings']
         recipe_detail['postedBy'] = result['postedBy']
         recipe_detail['avgStars'] = result['avgstars']
-    except pymysql.InternalError as err:
-        print("Error from MySQL: {}".format(err))
-        raise SelfException(err, status_code=502)
-
-    # run the query
-    statement = (
-        "select iName, unitName, amount "
-        "from recipeingredient "
-        "where recipeID = %s"
-    )
-    try:
-        cursor.execute(statement, recipeID)
-        results = cursor.fetchall()
-        for result in results:
-            ingredient = {
-                'unitName': result['unitName'],
-                'amount': result['amount']
-            }
-            recipe_detail['ingredients'][result['iName']] = ingredient
     except pymysql.InternalError as err:
         print("Error from MySQL: {}".format(err))
         raise SelfException(err, status_code=502)
@@ -624,6 +628,57 @@ def search_recipe_detail(recipeID):
         print("Error from MySQL: {}".format(err))
         raise SelfException(err, status_code=502)
 
+    # run the query
+    statement = (
+        "select iName, unitName, amount "
+        "from recipeingredient "
+        "where recipeID = %s"
+    )
+    try:
+        cursor.execute(statement, recipeID)
+        results = cursor.fetchall()
+        for result in results:
+            ingredient = {
+                'unitName': result['unitName'],
+                'amount': result['amount']
+            }
+            # if unit preference exist, change to preference
+            if username is not None:
+                if ingredient['unitName'] in mass_selection and recipe_detail['preferunits']['mass'] is not None:
+                    targetunits = recipe_detail['unitConversions'][ingredient['unitName']]
+                    ratio = 0
+                    for targetunit in targetunits:
+                        if targetunit['name'] == recipe_detail['preferunits']['mass']:
+                            ratio = targetunit['ratio']
+                            ingredient['unitName'] = recipe_detail['preferunits']['mass']
+                            ingredient['amount'] = decimal.Decimal(ingredient['amount']) * decimal.Decimal(ratio)
+                if ingredient['unitName'] in volume_selection and recipe_detail['preferunits']['volume'] is not None:
+                    targetunits = recipe_detail['unitConversions'][ingredient['unitName']]
+                    ratio = 0
+                    for targetunit in targetunits:
+                        if targetunit['name'] == recipe_detail['preferunits']['volume']:
+                            ratio = targetunit['ratio']
+                            ingredient['unitName'] = recipe_detail['preferunits']['volume']
+                            ingredient['amount'] = decimal.Decimal(ingredient['amount']) * decimal.Decimal(ratio)
+            recipe_detail['ingredients'][result['iName']] = ingredient
+    except pymysql.InternalError as err:
+        print("Error from MySQL: {}".format(err))
+        raise SelfException(err, status_code=502)
+
+    # log user's access
+    if username is not None:
+        statement = (
+            "insert into viewhistory (userName, recipeID) "
+            "values (%s, %s)"
+        )
+        try:
+            cursor.execute(statement, (username, recipeID))
+            conn.commit()
+        except pymysql.InternalError as err:
+            print("Error from MySQL: {}".format(err))
+            raise SelfException(err, status_code=502)
+
+    print(recipe_detail)
     return render_template('recipe_detail.html', data=recipe_detail, recipeID=recipeID)
 
 
@@ -739,10 +794,6 @@ def show_preference(username):
     if 'volume' not in unit_preference:
         unit_preference['volume'] = 'none'
 
-    # seletable units
-    mass_selection = ['g', 'kg', 'mg', 'oz', 'lb', 'none']
-    volume_selection = ['fl oz', 'l', 'ml', 'pt', 'none']
-
     return render_template('preference.html', username=username, viewing_history=viewing_history, unit_preference=unit_preference, mass_selection=mass_selection, volume_selection=volume_selection)
 
 
@@ -758,7 +809,6 @@ def change_preference(username, unit_type):
     cursor = conn.cursor()
 
     # run the query to check existence
-
     statement = (
         "select userName, unitName, unitType "
         "from preferunits "
