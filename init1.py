@@ -67,7 +67,27 @@ def getUserGroup(user):
     data = cursor.fetchall()
     cursor.close
     return data
+  
+#check user's events and return eid, ename, edate, edesc 
+#check if the event date and time is greater than now; check if the event is RSVP before
+def getUserEvent(user):
+    cursor = conn.cursor()
+    query = 'SELECT eID, eName, eDesc, eDate FROM Person Join GroupMembership ON Person.userName = GroupMembership.memberName NATURAL JOIN `Event` WHERE username = %s AND eDate > NOW() AND (userName, eID) NOT IN(SELECT userName, eID FROM rsvp WHERE rsvp.userName = %s AND rsvp.eID = eID) ORDER BY eID ASC'
+    cursor.execute(query, (user, user))
+    data = cursor.fetchall()
+    cursor.close
+    return data
 
+def getEventPicture(eID):
+    cursor = conn.cursor()
+    query = 'SELECT pictureURL FROM eventPicture WHERE eID = %s'
+    cursor.execute(query, (eID))
+    data = cursor.fetchall()
+    list = []
+    for d in data:
+        list.append(d['pictureURL'])
+    cursor.close
+    return list
 
 # if logged in, return username; if not return Null
 def checkUserLogin():
@@ -205,10 +225,12 @@ def postEventPage():
 
 # post event
 @app.route('/postEvent', methods=['GET', 'POST'])
+#post event
+@app.route('/postEvent', methods=['GET', 'POST'])
 def postEvent():
     user = session['username']
     finalPath = []
-    # check if pictures
+    #check if pictures
     if request.method == 'POST':
         # check if the post request has the file part
         if 'files[]' not in request.files:
@@ -220,19 +242,18 @@ def postEvent():
                     continue
                 elif file and allowed_file(file.filename):
                     filename = secure_filename(file.filename)
-                    # file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-                    finalPath.append(os.path.join(
-                        app.config['UPLOAD_EVENT_FOLDER'], filename))
-                    # flash('File successfully uploaded')
-                    # return redirect('/')
+                    #file.save(os.path.join(app.config['UPLOAD_EVENT_FOLDER'], filename))
+                    finalPath.append(os.path.join(app.config['UPLOAD_EVENT_FOLDER'], filename))
+                    #flash('File successfully uploaded')
+                    #return redirect('/')
                 else:
                     data = getUserGroup(user)
                     error = 'Allowed file types are png, jpg, jpeg, gif'
-                    return render_template('post_event.html', username=user, groups=data, error=error)
-                    # flash('Allowed file types are txt, pdf, png, jpg, jpeg, gif')
-                    # return redirect(request.url)
+                    return render_template('post_event.html', username = user, groups = data, error=error)
+                    #flash('Allowed file types are txt, pdf, png, jpg, jpeg, gif')
+                    #return redirect(request.url)
 
-    # get information
+    #get information
     eName = request.form['eName']
     eDesc = request.form['eDesc']
     if not eDesc:
@@ -241,39 +262,115 @@ def postEvent():
     gName = request.form['gName']
     gCreator = request.form['gCreator']
 
-    # check if the user is in the group
+    #check if the user is in the group
     cursor = conn.cursor()
     query = 'SELECT * FROM groupmembership WHERE memberName = %s AND gName = %s AND gCreator = %s'
     cursor.execute(query, (user, gName, gCreator))
     data = cursor.fetchall()
-    # if not, give an error message
+    #if not, give an error message
     if not data:
         error = 'You are not permitted to add event for a group that you are not a member of!'
         conn.commit()
         cursor.close()
         data = getUserGroup(user)
-        return render_template('post_event.html', username=user, groups=data, error=error)
-    # else add the data to the database
+        return render_template('post_event.html', username = user, groups = data, error=error)
+    #else add the data to the database
     query = 'INSERT INTO event (eName, eDesc, eDate, gName, gCreator) VALUES(%s, %s, %s, %s, %s)'
     cursor.execute(query, (eName, eDesc, eDate, gName, gCreator))
 
     eID = cursor.lastrowid
-    # deal with pictures, if no pictures, skip
+    #deal with pictures, if no pictures, skip
     if finalPath:
         i = 0
-        for finalP in finalPath:
-            firstpart = finalP.rsplit(
-                '.', 1)[0].lower() + '-' + str(eID) + '-' + str(i)
+        files = request.files.getlist('files[]')
+        for finalP, file in zip(finalPath, files):
+            firstpart = finalP.rsplit('.', 1)[0].lower() + '-' + str(eID) + '-' + str(i)
             secondpart = finalP.rsplit('.', 1)[1].lower()
             finalP = firstpart + "." + secondpart
             query = 'INSERT INTO eventpicture (eID, pictureURL) VALUES(%s, %s)'
             cursor.execute(query, (eID, finalP))
-            file.save(os.path.join(finalP))
+            file.save(finalP)
+            i = i + 1
     conn.commit()
     cursor.close()
     data = getUserGroup(user)
     message = 'You have added an event with eventID: ' + str(eID)
-    return render_template('post_event.html', username=user, groups=data, message=message)
+    return render_template('post_event.html', username = user, groups = data, message = message)
+
+#Define a route to rsvp page
+@app.route('/rsvp')
+def rsvpPage():
+    user = checkUserLogin()
+    if not user:
+        return redirect(url_for('login'))
+    data = getUserEvent(user)
+    if not data:
+        error = "You cannot RSVP any event"
+        return render_template('rsvp.html', username=user, error=error)
+    for d in data:
+        #print (d['eID'])
+        #data2.append(d['eID'])
+        d['pictureURL'] = (getEventPicture(d['eID']))
+        #print (d['pictureURL'])
+    # print (data)
+    return render_template('rsvp.html', username=user, events=data)
+
+#RSVP
+@app.route('/rsvp', methods=['GET', 'POST'])
+def rsvp():
+    user = session['username']
+    #get information
+    if "eID" not in request.form:
+        error = "You cannot RSVP any event"
+        return render_template('rsvp.html', username=user, error=error)
+    eID = request.form['eID']
+    response = request.form['response']
+
+    if not response:
+        error = 'You must select your response!'
+        data = getUserEvent(user)
+        return render_template('rsvp.html', username = user, events = data, error=error)
+    #check if the user is in the group
+    cursor = conn.cursor()
+    query = 'SELECT * FROM Person Join GroupMembership ON Person.userName = GroupMembership.memberName NATURAL JOIN `Event` WHERE eID = %s'
+    cursor.execute(query, (eID))
+    data = cursor.fetchall()
+    
+    #if not, give an error message
+    if not data:
+        error = 'You are not permitted to RSVP for a group that you are not a member of!'
+        conn.commit()
+        cursor.close()
+        data = getUserEvent(user)
+        for d in data:
+            d['pictureURL'] = (getEventPicture(d['eID']))
+        return render_template('rsvp.html', username = user, events = data, error=error)
+    
+    #check if rsvp before
+    query = 'SELECT * FROM rsvp WHERE userName = %s AND eID = %s'
+    cursor.execute(query, (user, eID))
+    data = cursor.fetchall()
+
+    #if there is data, give an error message
+    if data:
+        error = 'You have RSVP before'
+        conn.commit()
+        cursor.close()
+        data = getUserEvent(user)
+        for d in data:
+            d['pictureURL'] = (getEventPicture(d['eID']))
+        return render_template('rsvp.html', username = user, events = data, error=error)
+    
+    #else add the data to the database
+    query = 'INSERT INTO rsvp (username, eID, response) VALUES(%s, %s, %s)'
+    cursor.execute(query, (user, eID, response))
+    conn.commit()
+    cursor.close()
+    data = getUserEvent(user)
+    for d in data:
+        d['pictureURL'] = (getEventPicture(d['eID']))
+    message = 'You have RSVP'
+    return render_template('rsvp.html', username = user, events = data, message = message)
 
 
 @app.route('/logout')
