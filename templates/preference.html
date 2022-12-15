@@ -20,7 +20,30 @@
     {% endfor %}
     <br><br>
     <h3>unit preference: </h3>
-    <p>mass: {{unit_preference.mass}}</p>
-    <p>volume: {{unit_preference.volume}}</p>
-    <button>set unit preference</button>
+    <p>mass: </p>
+    <form action="{{'/ChangePeference/%s/mass'%username}}" method="get">
+        <select name="unitname">
+        {% for unit in mass_selection -%}
+        {% if unit_preference.mass == unit %}
+            <option value="{{unit}}" selected>{{unit}}</option>
+        {% else %}
+            <option value="{{unit}}">{{unit}}</option>
+        {% endif %}
+        {% endfor %}
+        </select>
+        <input type="submit" value="set mass unit preference">
+    </form>
+    <p>volume: </p>
+    <form action="{{'/ChangePeference/%s/volume'%username}}" method="get">
+        <select name="unitname">
+        {% for unit in volume_selection -%}
+        {% if unit_preference.volume == unit %}
+            <option value="{{unit}}" selected>{{unit}}</option>
+        {% else %}
+            <option value="{{unit}}">{{unit}}</option>
+        {% endif %}
+        {% endfor %}
+        </select>
+        <input type="submit" value="set volume unit preference">
+    </form>
 </body>

@@ -1,4 +1,5 @@
 from flask import Flask
+import os
 
 #UPLOAD_FOLDER = '/Users/phyllisfrankl/Documents/Magic\ Briefcase/CS3083\ Spring\ 2020/FlaskDemoSpr2020/FlaskDemoPhotos'
 UPLOAD_RECIPE_FOLDER = 'RecipePhotos'

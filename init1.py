@@ -7,6 +7,7 @@ import pymysql.cursors
 from app import app
 from werkzeug.utils import secure_filename
 import os
+import html
 
 
 ALLOWED_EXTENSIONS = set(['txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif'])
@@ -432,7 +433,8 @@ def search_recipe_detail(recipeID):
         'tags': [],  # list of tags
         'relatedRecipes': {},  # dict of related Recipes dicts of ids and names
         'reviews': {},  # dict of reviews dicts of username, title, description, stars, and photoURLs
-        'Steps': {}  # dict of steps dicts of stepNo and description
+        'Steps': {},  # dict of steps dicts of stepNo and description
+        'unitConversions': {}
     }
     # prepare queries to get all recipe_detail
     cursor = conn.cursor()
@@ -595,6 +597,33 @@ def search_recipe_detail(recipeID):
         print("Error from MySQL: {}".format(err))
         raise SelfException(err, status_code=502)
 
+    # get unit conversion ratio
+    statement = ("select * from unitconversion;")
+    try:
+        cursor.execute(statement)
+        results = cursor.fetchall()
+        for result in results:
+            unit_for_source = {
+                'name': result['destinationUnit'], 'ratio': float(result['ratio'])}
+            unit_for_dest = {
+                'name': result['sourceUnit'], 'ratio': 1/(float(result['ratio']))}
+            if result['sourceUnit'] not in recipe_detail['unitConversions']:
+                recipe_detail['unitConversions'][result['sourceUnit']] = [
+                    unit_for_source]
+            elif unit_for_source not in recipe_detail['unitConversions'][result['sourceUnit']]:
+                recipe_detail['unitConversions'][result['sourceUnit']].append(
+                    unit_for_source)
+
+            if result['destinationUnit'] not in recipe_detail['unitConversions']:
+                recipe_detail['unitConversions'][result['destinationUnit']] = [
+                    unit_for_dest]
+            elif unit_for_dest not in recipe_detail['unitConversions'][result['destinationUnit']]:
+                recipe_detail['unitConversions'][result['destinationUnit']].append(
+                    unit_for_dest)
+    except pymysql.InternalError as err:
+        print("Error from MySQL: {}".format(err))
+        raise SelfException(err, status_code=502)
+
     return render_template('recipe_detail.html', data=recipe_detail, recipeID=recipeID)
 
 
@@ -710,8 +739,62 @@ def show_preference(username):
     if 'volume' not in unit_preference:
         unit_preference['volume'] = 'none'
 
-    return render_template('preference.html', username=username, viewing_history=viewing_history, unit_preference=unit_preference)
+    # seletable units
+    mass_selection = ['g', 'kg', 'mg', 'oz', 'lb', 'none']
+    volume_selection = ['fl oz', 'l', 'ml', 'pt', 'none']
 
+    return render_template('preference.html', username=username, viewing_history=viewing_history, unit_preference=unit_preference, mass_selection=mass_selection, volume_selection=volume_selection)
+
+
+# excecuting change preferred unit on submit
+@app.route('/ChangePeference/<username>/<unit_type>', methods=['GET'])
+def change_preference(username, unit_type):
+    data = {
+        'unit_name': request.args.get("unitname"),
+        'username': username,
+        'unit_type': unit_type
+    }
+    # prepare queries
+    cursor = conn.cursor()
+
+    # run the query to check existence
+
+    statement = (
+        "select userName, unitName, unitType "
+        "from preferunits "
+        "where userName = %(username)s and unitType = %(unit_type)s "
+    )
+    try:
+        cursor.execute(statement, data)
+        result = cursor.fetchone()
+    except pymysql.InternalError as err:
+        print("Error from MySQL: {}".format(err))
+        raise SelfException(err, status_code=502)
+
+    if result is None:
+        statement = (
+            "insert into preferunits (userName, unitName, unitType) "
+            "values (%(username)s, %(unit_name)s, %(unit_type)s)"
+        )
+        try:
+            cursor.execute(statement, data)
+            conn.commit()
+        except pymysql.InternalError as err:
+            print("Error from MySQL: {}".format(err))
+            raise SelfException(err, status_code=502)
+    else:
+        statement = (
+            "update preferunits "
+            "set unitName = %(unit_name)s "
+            "where userName = %(username)s and unitType = %(unit_type)s "
+        )
+        try:
+            cursor.execute(statement, data)
+            conn.commit()
+        except pymysql.InternalError as err:
+            print("Error from MySQL: {}".format(err))
+            raise SelfException(err, status_code=502)
+    return redirect(url_for('show_preference', username=username))
 
 class SelfException(Exception):
     def __init__(self, message, status_code=400):
