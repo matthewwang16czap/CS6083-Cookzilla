@@ -20,7 +20,7 @@ ALLOWED_EXTENSIONS = set(['txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif'])
 salt = "6083database"
 
 # Configure MySQL
-'''
+
 conn = pymysql.connect(host='localhost',
                        port=3306,
                        user='holly',
@@ -28,14 +28,14 @@ conn = pymysql.connect(host='localhost',
                        db='Cookzilla',
                        charset='utf8mb4',
                        cursorclass=pymysql.cursors.DictCursor)
-'''
-conn = pymysql.connect(host='localhost',
-                        port=3306,
-                        user='Sihan',
-                        password='Wsh010217',
-                        db='cs6083_project',
-                        charset='utf8mb4',
-                        cursorclass=pymysql.cursors.DictCursor)
+
+# conn = pymysql.connect(host='localhost',
+#                         port=3306,
+#                         user='Sihan',
+#                         password='Wsh010217',
+#                         db='cs6083_project',
+#                         charset='utf8mb4',
+#                         cursorclass=pymysql.cursors.DictCursor)
 
 
 def allowed_image(filename):
@@ -696,7 +696,6 @@ def post_review(recipeID):
             pictures = request.files.getlist('pictures')
             # check pictures
             for file in pictures:
-                print(file)
                 if file and not(allowed_image(file.filename)):
                     flash('Allowed image types are png, jpg, jpeg, gif')
                     return render_template('post_review.html', recipeID=recipeID)
@@ -736,7 +735,7 @@ def post_review(recipeID):
                     file.save(file_url)
                     # flash('File successfully uploaded')
                     query = 'INSERT INTO ReviewPicture (username,recipeID,pictureURL) VALUES (%s, %s, %s)'
-                    cursor.execute(query, (username, recipeID, str(file_url)))
+                    cursor.execute(query, (username, recipeID, str(save_url)))
                     conn.commit()
             cursor.close()
             return redirect(url_for('home'))
