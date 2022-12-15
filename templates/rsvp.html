@@ -1,0 +1,61 @@
+<html>
+
+<head>
+</head>
+
+<body>
+    <h1>Welcome {{username}}</h1>
+    <h2>You cannot RSVP an event whose time is eariler than now</h2>
+    <h2>You cannot RSVP an event you already RSVP</h2>
+    <h2>You cannot RSVP an event you are not a member of the group of the event</h2>
+    <style type="text/css">
+        table,
+        th,
+        td {
+            border: 1px solid black;
+        }
+    </style>
+
+    -- Here are the events you can RSVP, pick one you would like to RSVP
+<form method="POST" action="/rsvp" enctype=multipart/form-data>
+    <table>
+        <th>Pick One</th>
+        <th>Event ID</th>
+        <th>Event Name</th>
+        <th>Event Date</th>
+        <th>Event Description</th>
+        <th>Event Pictures</th>
+        {% for line in events %}
+        <tr>
+            <td><input type="radio" name = eID value = {{line.eID}} required></td>
+            <td>{{line.eID}}</td>
+            <td>{{line.eName}}</td>
+            <td>{{line.eDate}}</td>
+            <td>{{line.eDesc}}</td>
+            <td>
+            {% for item in line.pictureURL %}
+                <img src = "{{item}}" alt=" {{item}} "width="200px" height="200px">
+            {% endfor %}
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+
+<p>Please pick you response</p>
+    <input type="radio" name="response" value = "1" required> <label>Yes</label></br>
+    <input type="radio" name="response" value = "0" required/> <label>No</label></br>
+    <input type="submit" value=Submit /></br>
+</form>
+
+
+{% if error %}
+<p class="error"><strong>Error:</strong> {{error}}</p>
+{% endif %}
+{% if message %}
+<p class="message"><strong>Message:</strong> {{message}}</p>
+{% endif %}
+
+<a href="/home">Back to Home Page</a></br>
+<a href="/logout">Logout</a></br>
+</body>
+</html>

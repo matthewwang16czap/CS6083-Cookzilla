@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+</head>
+
+<body>
+	<p> If you are logged in, clicking login or register will log you out
+	<p> Current Status: {{status}}</p>
+	{% if info %}
+	<p class="error"><strong>username: </strong> {{info}}</p>
+	{% endif %}
+	<a href="#">Search for Recipes</a></br>
+	<a href="#">Display Recipe Info</a></br>
+	<a href="/login">Login</a></br>
+	<a href="/register">Register</a></br>
+	<a href="/home">Go to Home Page</a></br>
+	<a href="/logout">Logout</a></br>
+</body>
+
+</html>
