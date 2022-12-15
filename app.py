@@ -6,7 +6,7 @@ UPLOAD_EVENT_FOLDER = 'EventPhotos'
 UPLOAD_REVIEW_FOLDER = 'ReviewPictures'
 ALLOWED_IMAGE_EXTENSIONS = set(['PNG', 'JPG', 'JPEG', 'GIF'])
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder="static")
 app.secret_key = "secret key"
 app.config['UPLOAD_EVENT_FOLDER'] = UPLOAD_EVENT_FOLDER
 app.config['UPLOAD_RECIPE_FOLDER'] = UPLOAD_RECIPE_FOLDER

@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cookzilla Project</title>
+</head>
+
+<body>
+    <h1>Your Preference, {{username}}: </h1>
+    <h3>viewing history: </h3>
+    {% for recipeID, viewed_recipe in viewing_history.items() -%}
+    <div style="background-color:#1aff00;clear:both;text-align:left;">
+        <a href="{{'/SearchRecipeDetail/%s'%recipeID}}">
+            <h3 >{{ recipeID }}, {{ viewed_recipe.title }}, {{ viewed_recipe.timestamp }} </h3>
+        </a>
+    </div>
+    {% endfor %}
+    <br><br>
+    <h3>unit preference: </h3>
+    <p>mass: {{unit_preference.mass}}</p>
+    <p>volume: {{unit_preference.volume}}</p>
+    <button>set unit preference</button>
+</body>

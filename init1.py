@@ -1,6 +1,6 @@
 # Import Flask Library
 import hashlib
-from flask import Flask, render_template, request, session, url_for, redirect, flash, jsonify, make_response
+from flask import Flask, render_template, request, session, url_for, redirect, flash, jsonify, make_response, send_from_directory
 import pymysql.cursors
 
 # for uploading photo:
@@ -332,15 +332,17 @@ def post_recipe():
             if file and allowed_image(file.filename):
                 filename = secure_filename(file.filename)
                 file_dir = os.path.join(
-                    app.config['UPLOAD_RECIPE_FOLDER'], str(recipeID))
+                    'static', app.config['UPLOAD_RECIPE_FOLDER'], str(recipeID))
                 file_url = os.path.join(
+                    'static', app.config['UPLOAD_RECIPE_FOLDER'], str(recipeID), filename)
+                save_url = os.path.join(
                     app.config['UPLOAD_RECIPE_FOLDER'], str(recipeID), filename)
                 if not os.path.exists(file_dir):
                     os.makedirs(file_dir)
                 file.save(file_url)
                 # flash('File successfully uploaded')
                 query = 'INSERT INTO RecipePicture (recipeID,pictureURL) VALUES (%s, %s)'
-                cursor.execute(query, (recipeID, str(file_url)))
+                cursor.execute(query, (recipeID, str(save_url)))
                 conn.commit()
             else:
                 flash('Allowed image types are png, jpg, jpeg, gif')
@@ -481,7 +483,8 @@ def search_recipe_detail(recipeID):
         cursor.execute(statement, recipeID)
         results = cursor.fetchall()
         for result in results:
-            recipe_detail['pictureURLs'].append(result['pictureURL'])
+            recipe_detail['pictureURLs'].append(
+                result['pictureURL'].replace('\\', '/'))
     except pymysql.InternalError as err:
         print("Error from MySQL: {}".format(err))
         raise SelfException(err, status_code=502)
@@ -568,7 +571,8 @@ def search_recipe_detail(recipeID):
         cursor.execute(statement, recipeID)
         results = cursor.fetchall()
         for result in results:
-            recipe_detail['reviews'][result['userName']]['pictureURLs'].append(result['pictureURL'])
+            recipe_detail['reviews'][result['userName']]['pictureURLs'].append(
+                result['pictureURL'].replace('\\', '/'))
     except pymysql.InternalError as err:
         print("Error from MySQL: {}".format(err))
         raise SelfException(err, status_code=502)
@@ -591,8 +595,8 @@ def search_recipe_detail(recipeID):
         print("Error from MySQL: {}".format(err))
         raise SelfException(err, status_code=502)
 
-    print(recipe_detail)
-    return render_template('recipe_detail.html', recipe_detail=recipe_detail)
+    return render_template('recipe_detail.html', data=recipe_detail, recipeID=recipeID)
+
 
 @app.route('/postReview/<recipeID>', methods=['GET', 'POST'])
 def post_review(recipeID):
@@ -638,11 +642,11 @@ def post_review(recipeID):
                 if file:
                     filename = secure_filename(file.filename)
                     file_dir = os.path.join(
-                        app.config['UPLOAD_REVIEW_FOLDER'], str(recipeID), str(username))
+                        'static', app.config['UPLOAD_REVIEW_FOLDER'], str(recipeID), str(username))
                     file_url = os.path.join(
+                        'static', app.config['UPLOAD_REVIEW_FOLDER'], str(recipeID), str(username), filename)
+                    save_url = os.path.join(
                         app.config['UPLOAD_REVIEW_FOLDER'], str(recipeID), str(username), filename)
-                    print(file_dir)
-                    print(file_url)
                     if not os.path.exists(file_dir):
                         os.makedirs(file_dir)
                     file.save(file_url)
@@ -652,6 +656,61 @@ def post_review(recipeID):
                     conn.commit()
             cursor.close()
             return redirect(url_for('home'))
+
+
+# present the preference and allow user to change preferred unit on submit
+@app.route('/Preference/<username>')
+def show_preference(username):
+    # the following should be in mysql server
+    viewing_history = {} # contains at most 10 recently viewed recipe ids and title
+    unit_preference = {} # choose unit to be shown
+
+    # prepare queries to get viewing_history and unit_preference
+    cursor = conn.cursor()
+
+    # run the query to get history
+    statement = (
+        "select v.recipeID, r.title, v.timestamp "
+        "from viewhistory v natural join recipe r "
+        "where v.username = %s "
+        "order by v.timestamp desc "
+        "limit 10"
+    )
+    try:
+        cursor.execute(statement, username)
+        results = cursor.fetchall()
+        for result in results:
+            viewed_recipe = {
+                'title': result['title'],
+                'timestamp': result['timestamp']
+            }
+            viewing_history[result['recipeID']] = viewed_recipe
+    except pymysql.InternalError as err:
+        print("Error from MySQL: {}".format(err))
+        raise SelfException(err, status_code=502)
+
+    # run the query to get preferunits
+    statement = (
+        "select username, unitName, unitType "
+        "from preferunits "
+        "where username = %s "
+    )
+    try:
+        cursor.execute(statement, username)
+        results = cursor.fetchall()
+        for result in results:
+            unit_preference[result['unitType']] = result['unitName']
+    except pymysql.InternalError as err:
+        print("Error from MySQL: {}".format(err))
+        raise SelfException(err, status_code=502)
+
+    # if no unit preference, set None
+    if 'mass' not in unit_preference:
+        unit_preference['mass'] = 'none'
+    if 'volume' not in unit_preference:
+        unit_preference['volume'] = 'none'
+
+    return render_template('preference.html', username=username, viewing_history=viewing_history, unit_preference=unit_preference)
 
 
 class SelfException(Exception):
