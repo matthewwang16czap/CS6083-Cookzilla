@@ -6,16 +6,18 @@
 </head>
 
 <body>
-	<p> If you are logged in, clicking login or register will log you out
-	<p> Current Status: {{status}}</p>
+	<h1>Welcome to CookZilla</h1>
 	{% if info %}
-	<p class="error"><strong>username: </strong> {{info}}</p>
+	<p><strong>username: </strong> {{info}}</p>
+	<a href="/home">Go to Home Page</a></br>
 	{% endif %}
 	<a href="/searchRecipes">Search for Recipes</a></br>
-	<a href="/login">Login</a></br>
-	<a href="/register">Register</a></br>
-	<a href="/home">Go to Home Page</a></br>
+	{% if info %}
 	<a href="/logout">Logout</a></br>
+	{% else %}
+	<a href="/login">Login</a></br>
+	{% endif %}
+	<a href="/register">Register</a></br>
 </body>
 
 </html>

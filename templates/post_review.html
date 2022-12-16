@@ -21,17 +21,10 @@
     <br>
     Upload Photos:(Optional)
     <input type="file" name="pictures" multiple="" onchange="showFileNames(event)"><span id="filenames"></span>
+    {% if error %}<p>{{error}}</p>
+    {% endif %}
 	<br>
     <input type="submit" value = Post />
-    {% with messages = get_flashed_messages() %}
-        {% if messages %}
-            <div class=flashes>Error:
-            {% for message in messages %}
-            <p>{{ message }}</p>
-            {% endfor %}
-            </div>
-        {% endif %}
-    {% endwith %}
 </form>
 
 <style type="text/css">

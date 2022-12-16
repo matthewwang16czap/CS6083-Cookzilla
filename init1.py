@@ -67,9 +67,11 @@ def getUserGroup(user):
     data = cursor.fetchall()
     cursor.close
     return data
-  
-#check user's events and return eid, ename, edate, edesc 
-#check if the event date and time is greater than now; check if the event is RSVP before
+
+# check user's events and return eid, ename, edate, edesc
+# check if the event date and time is greater than now; check if the event is RSVP before
+
+
 def getUserEvent(user):
     cursor = conn.cursor()
     query = 'SELECT eID, eName, eDesc, eDate FROM Person Join GroupMembership ON Person.userName = GroupMembership.memberName NATURAL JOIN `Event` WHERE username = %s AND eDate > NOW() AND (userName, eID) NOT IN(SELECT userName, eID FROM rsvp WHERE rsvp.userName = %s AND rsvp.eID = eID) ORDER BY eID ASC'
@@ -77,6 +79,7 @@ def getUserEvent(user):
     data = cursor.fetchall()
     cursor.close
     return data
+
 
 def getEventPicture(eID):
     cursor = conn.cursor()
@@ -90,6 +93,8 @@ def getEventPicture(eID):
     return list
 
 # if logged in, return username; if not return Null
+
+
 def checkUserLogin():
     user = None
     # check if the user logged in or not
@@ -154,7 +159,7 @@ def loginAuth():
         error = 'Invalid username or password'
         return render_template('login.html', error=error)
 
-      
+
 # Authenticates the register
 @app.route('/registerAuth', methods=['GET', 'POST'])
 def registerAuth():
@@ -209,6 +214,8 @@ def home():
     return render_template('home.html', username=user)
 
 # Define a route to post an event page
+
+
 @app.route('/postEvent')
 def postEventPage():
     user = None
@@ -224,12 +231,10 @@ def postEventPage():
 
 # post event
 @app.route('/postEvent', methods=['GET', 'POST'])
-#post event
-@app.route('/postEvent', methods=['GET', 'POST'])
 def postEvent():
     user = session['username']
     finalPath = []
-    #check if pictures
+    # check if pictures
     if request.method == 'POST':
         # check if the post request has the file part
         if 'files[]' not in request.files:
@@ -242,17 +247,18 @@ def postEvent():
                 elif file and allowed_file(file.filename):
                     filename = secure_filename(file.filename)
                     #file.save(os.path.join(app.config['UPLOAD_EVENT_FOLDER'], filename))
-                    finalPath.append(os.path.join(app.config['UPLOAD_EVENT_FOLDER'], filename))
+                    finalPath.append(os.path.join(
+                        app.config['UPLOAD_EVENT_FOLDER'], filename))
                     #flash('File successfully uploaded')
-                    #return redirect('/')
+                    # return redirect('/')
                 else:
                     data = getUserGroup(user)
                     error = 'Allowed file types are png, jpg, jpeg, gif'
-                    return render_template('post_event.html', username = user, groups = data, error=error)
+                    return render_template('post_event.html', username=user, groups=data, error=error)
                     #flash('Allowed file types are txt, pdf, png, jpg, jpeg, gif')
-                    #return redirect(request.url)
+                    # return redirect(request.url)
 
-    #get information
+    # get information
     eName = request.form['eName']
     eDesc = request.form['eDesc']
     if not eDesc:
@@ -261,29 +267,30 @@ def postEvent():
     gName = request.form['gName']
     gCreator = request.form['gCreator']
 
-    #check if the user is in the group
+    # check if the user is in the group
     cursor = conn.cursor()
     query = 'SELECT * FROM groupmembership WHERE memberName = %s AND gName = %s AND gCreator = %s'
     cursor.execute(query, (user, gName, gCreator))
     data = cursor.fetchall()
-    #if not, give an error message
+    # if not, give an error message
     if not data:
         error = 'You are not permitted to add event for a group that you are not a member of!'
         conn.commit()
         cursor.close()
         data = getUserGroup(user)
-        return render_template('post_event.html', username = user, groups = data, error=error)
-    #else add the data to the database
+        return render_template('post_event.html', username=user, groups=data, error=error)
+    # else add the data to the database
     query = 'INSERT INTO event (eName, eDesc, eDate, gName, gCreator) VALUES(%s, %s, %s, %s, %s)'
     cursor.execute(query, (eName, eDesc, eDate, gName, gCreator))
 
     eID = cursor.lastrowid
-    #deal with pictures, if no pictures, skip
+    # deal with pictures, if no pictures, skip
     if finalPath:
         i = 0
         files = request.files.getlist('files[]')
         for finalP, file in zip(finalPath, files):
-            firstpart = finalP.rsplit('.', 1)[0].lower() + '-' + str(eID) + '-' + str(i)
+            firstpart = finalP.rsplit(
+                '.', 1)[0].lower() + '-' + str(eID) + '-' + str(i)
             secondpart = finalP.rsplit('.', 1)[1].lower()
             finalP = firstpart + "." + secondpart
             query = 'INSERT INTO eventpicture (eID, pictureURL) VALUES(%s, %s)'
@@ -294,9 +301,11 @@ def postEvent():
     cursor.close()
     data = getUserGroup(user)
     message = 'You have added an event with eventID: ' + str(eID)
-    return render_template('post_event.html', username = user, groups = data, message = message)
+    return render_template('post_event.html', username=user, groups=data, message=message)
 
-#Define a route to rsvp page
+# Define a route to rsvp page
+
+
 @app.route('/rsvp')
 def rsvpPage():
     user = checkUserLogin()
@@ -308,17 +317,19 @@ def rsvpPage():
         return render_template('rsvp.html', username=user, error=error)
     for d in data:
         #print (d['eID'])
-        #data2.append(d['eID'])
+        # data2.append(d['eID'])
         d['pictureURL'] = (getEventPicture(d['eID']))
         #print (d['pictureURL'])
     # print (data)
     return render_template('rsvp.html', username=user, events=data)
 
-#RSVP
+# RSVP
+
+
 @app.route('/rsvp', methods=['GET', 'POST'])
 def rsvp():
     user = session['username']
-    #get information
+    # get information
     if "eID" not in request.form:
         error = "You cannot RSVP any event"
         return render_template('rsvp.html', username=user, error=error)
@@ -328,14 +339,14 @@ def rsvp():
     if not response:
         error = 'You must select your response!'
         data = getUserEvent(user)
-        return render_template('rsvp.html', username = user, events = data, error=error)
-    #check if the user is in the group
+        return render_template('rsvp.html', username=user, events=data, error=error)
+    # check if the user is in the group
     cursor = conn.cursor()
     query = 'SELECT * FROM Person Join GroupMembership ON Person.userName = GroupMembership.memberName NATURAL JOIN `Event` WHERE eID = %s'
     cursor.execute(query, (eID))
     data = cursor.fetchall()
-    
-    #if not, give an error message
+
+    # if not, give an error message
     if not data:
         error = 'You are not permitted to RSVP for a group that you are not a member of!'
         conn.commit()
@@ -343,14 +354,14 @@ def rsvp():
         data = getUserEvent(user)
         for d in data:
             d['pictureURL'] = (getEventPicture(d['eID']))
-        return render_template('rsvp.html', username = user, events = data, error=error)
-    
-    #check if rsvp before
+        return render_template('rsvp.html', username=user, events=data, error=error)
+
+    # check if rsvp before
     query = 'SELECT * FROM rsvp WHERE userName = %s AND eID = %s'
     cursor.execute(query, (user, eID))
     data = cursor.fetchall()
 
-    #if there is data, give an error message
+    # if there is data, give an error message
     if data:
         error = 'You have RSVP before'
         conn.commit()
@@ -358,9 +369,9 @@ def rsvp():
         data = getUserEvent(user)
         for d in data:
             d['pictureURL'] = (getEventPicture(d['eID']))
-        return render_template('rsvp.html', username = user, events = data, error=error)
-    
-    #else add the data to the database
+        return render_template('rsvp.html', username=user, events=data, error=error)
+
+    # else add the data to the database
     query = 'INSERT INTO rsvp (username, eID, response) VALUES(%s, %s, %s)'
     cursor.execute(query, (user, eID, response))
     conn.commit()
@@ -369,7 +380,7 @@ def rsvp():
     for d in data:
         d['pictureURL'] = (getEventPicture(d['eID']))
     message = 'You have RSVP'
-    return render_template('rsvp.html', username = user, events = data, message = message)
+    return render_template('rsvp.html', username=user, events=data, message=message)
 
 
 @app.route('/logout')
@@ -384,18 +395,21 @@ def post_recipe():
     ingredient = {}
     unit = {}
     cursor = conn.cursor()
-    query = 'SELECT iName FROM Ingredient ORDER BY iName'
-    cursor.execute(query)
-    ingredient = cursor.fetchall()
     query = 'SELECT unitName FROM Unit ORDER BY unitName'
     cursor.execute(query)
     unit = cursor.fetchall()
     cursor.close()
 
     if request.method == 'POST':
-        # username = session['username']
-        username = '123'
+        username = session['username']
         cursor = conn.cursor()
+        # check pictures
+        pictures = request.files.getlist('pictures')
+        for file in pictures:
+            if file and not(allowed_image(file.filename)):
+                error = 'Allowed image types are png, jpg, jpeg, gif'
+                return render_template('post_recipe.html', unit=unit, error=error)
+
         # insert into Recipe table
         query = 'INSERT INTO Recipe(title,numServings,postedBy) VALUES (%s, %s, %s)'
         cursor.execute(
@@ -409,13 +423,21 @@ def post_recipe():
         units = request.form.getlist('unit')
         tags = request.form.getlist('tag')
         steps = request.form.getlist('step')
-        pictures = request.files.getlist('pictures')
+
         # insert into RecipeTag table
         for tagText in tags:
             query = 'INSERT INTO RecipeTag(recipeID,tagText) VALUES (%s, %s)'
             cursor.execute(query, (recipeID, tagText))
             conn.commit()
 
+        for ingredient in ingredients:
+            query = 'SELECT * FROM ingredient where iName = %s'
+            cursor.execute(query, ingredient)
+            data = cursor.fetchone()
+            if data == None:
+                query = 'INSERT INTO Ingredient(iName) VALUES (%s)'
+                cursor.execute(query, ingredient)
+                conn.commit()
         # insert into RecipeIngredient table
         for i in zip(ingredients, units, amounts):
             query = 'INSERT INTO RecipeIngredient(recipeID, iName, unitName, amount) VALUES (%s, %s, %s, %s)'
@@ -445,11 +467,10 @@ def post_recipe():
                 query = 'INSERT INTO RecipePicture (recipeID,pictureURL) VALUES (%s, %s)'
                 cursor.execute(query, (recipeID, str(save_url)))
                 conn.commit()
-            else:
-                flash('Allowed image types are png, jpg, jpeg, gif')
         cursor.close()
+        return render_template('home.html', message='Your new recipe has been posted')
 
-    return render_template('post_recipe.html', ingredient=ingredient, unit=unit)
+    return render_template('post_recipe.html', unit=unit)
 
 
 @app.route('/searchRecipes')
@@ -535,7 +556,7 @@ def search_recipe_detail(recipeID):
         'reviews': {},  # dict of reviews dicts of username, title, description, stars, and photoURLs
         'Steps': {},  # dict of steps dicts of stepNo and description
         'unitConversions': {},
-        'preferunits':{}
+        'preferunits': {}
     }
     # prepare queries to get all recipe_detail
     cursor = conn.cursor()
@@ -553,7 +574,8 @@ def search_recipe_detail(recipeID):
             cursor.execute(statement, username)
             results = cursor.fetchall()
             for result in results:
-                recipe_detail['preferunits'][result['unitType']] = result['unitName']
+                recipe_detail['preferunits'][result['unitType']
+                                             ] = result['unitName']
         except pymysql.InternalError as err:
             print("Error from MySQL: {}".format(err))
             raise SelfException(err, status_code=502)
@@ -747,7 +769,8 @@ def search_recipe_detail(recipeID):
                         if targetunit['name'] == recipe_detail['preferunits']['mass']:
                             ratio = targetunit['ratio']
                             ingredient['unitName'] = recipe_detail['preferunits']['mass']
-                            ingredient['amount'] = decimal.Decimal(ingredient['amount']) * decimal.Decimal(ratio)
+                            ingredient['amount'] = decimal.Decimal(
+                                ingredient['amount']) * decimal.Decimal(ratio)
                 if ingredient['unitName'] in volume_selection and recipe_detail['preferunits']['volume'] is not None:
                     targetunits = recipe_detail['unitConversions'][ingredient['unitName']]
                     ratio = 0
@@ -755,7 +778,8 @@ def search_recipe_detail(recipeID):
                         if targetunit['name'] == recipe_detail['preferunits']['volume']:
                             ratio = targetunit['ratio']
                             ingredient['unitName'] = recipe_detail['preferunits']['volume']
-                            ingredient['amount'] = decimal.Decimal(ingredient['amount']) * decimal.Decimal(ratio)
+                            ingredient['amount'] = decimal.Decimal(
+                                ingredient['amount']) * decimal.Decimal(ratio)
             recipe_detail['ingredients'][result['iName']] = ingredient
     except pymysql.InternalError as err:
         print("Error from MySQL: {}".format(err))
@@ -793,8 +817,8 @@ def post_review(recipeID):
             # check pictures
             for file in pictures:
                 if file and not(allowed_image(file.filename)):
-                    flash('Allowed image types are png, jpg, jpeg, gif')
-                    return render_template('post_review.html', recipeID=recipeID)
+                    error = 'Allowed image types are png, jpg, jpeg, gif'
+                    return render_template('post_review.html', recipeID=recipeID, error=error)
             # check if the user have already posted review of this recipe
             query = 'SELECT * FROM Review WHERE userName = %s AND recipeID = %s;'
             cursor.execute(query, (username, recipeID))
@@ -834,15 +858,15 @@ def post_review(recipeID):
                     cursor.execute(query, (username, recipeID, str(save_url)))
                     conn.commit()
             cursor.close()
-            return redirect(url_for('home'))
+            return redirect(url_for('search_recipe_detail', recipeID=recipeID))
 
 
 # present the preference and allow user to change preferred unit on submit
 @app.route('/Preference/<username>')
 def show_preference(username):
     # the following should be in mysql server
-    viewing_history = {} # contains at most 10 recently viewed recipe ids and title
-    unit_preference = {} # choose unit to be shown
+    viewing_history = {}  # contains at most 10 recently viewed recipe ids and title
+    unit_preference = {}  # choose unit to be shown
 
     # prepare queries to get viewing_history and unit_preference
     cursor = conn.cursor()
@@ -940,6 +964,7 @@ def change_preference(username, unit_type):
             print("Error from MySQL: {}".format(err))
             raise SelfException(err, status_code=502)
     return redirect(url_for('show_preference', username=username))
+
 
 class SelfException(Exception):
     def __init__(self, message, status_code=400):

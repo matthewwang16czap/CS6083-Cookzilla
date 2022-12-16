@@ -3,7 +3,6 @@
 </head>
 <body>
 <form enctype="multipart/form-data" action="/postRecipe" method="POST">
-	<h1>Welcome {{username}}</h1> 
     <h1>Post New Recipe</h1>
 	Recipe Title: <input type="text" name = "title" placeholder="Enter Recipe Title" required/> </br>
     Number of Servings: <input type="text" name = "numServings" placeholder="Enter Number of Servings" required/> </br>
@@ -13,13 +12,7 @@
         <th>Unit</th>
         <th>Amount</th>
         <tr>
-            <td>
-                <select name="ingredient">
-                    {% for i in ingredient %}
-                    <option value={{i.iName}}>{{i.iName}}</option>
-                    {% endfor %}
-                </select> 
-            </td>
+            <td><input type="text" name="ingredient" required/></td>
             <td>
                 <select name="unit">
                 {% for u in unit %}
@@ -49,9 +42,12 @@
     <br>
     Upload Pictures:(Optional)
     <input type="file" name="pictures" multiple="" onchange="showFileNames(event)"><span id="filenames"></span>
-	<br>
+	{% if error %}<p>{{error}}</p>
+    {% endif %}
+    <br>
     <input type="submit" value = Post />
 </form>
+<a href="/home">Back to Home Page</a>
 
 <style type="text/css">
 	table, th, td{
@@ -74,14 +70,7 @@
       var cell1 = row.insertCell(0);
       var cell2 = row.insertCell(1);
       var cell3 = row.insertCell(2);
-      var ingredient_list = document.createElement("select");
-      var ingredient = JSON.parse('{{ingredient|tojson}}');
-      for (var i in ingredient){
-        var option = document.createElement("option");
-            option.value = ingredient[i]['iName'];
-            option.text = ingredient[i]['iName'];
-            ingredient_list.appendChild(option);
-      }
+      var ingredient_input = document.createElement("input");
       var unit_list = document.createElement("select");
       var unit = JSON.parse('{{unit|tojson}}');
       for (var u in unit){
@@ -91,10 +80,10 @@
             unit_list.appendChild(option);
       }
       var amount_input = document.createElement("input");
-      ingredient_list.setAttribute("name","ingredient");
+      ingredient_input.setAttribute("name","ingredient");
       unit_list.setAttribute("name","unit");
       amount_input.setAttribute("name","amount");
-      cell1.appendChild(ingredient_list);
+      cell1.appendChild(ingredient_input);
       cell2.appendChild(unit_list);
       cell3.appendChild(amount_input);
     }
