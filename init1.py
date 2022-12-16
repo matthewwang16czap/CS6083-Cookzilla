@@ -154,7 +154,7 @@ def loginAuth():
         error = 'Invalid username or password'
         return render_template('login.html', error=error)
 
-
+      
 # Authenticates the register
 @app.route('/registerAuth', methods=['GET', 'POST'])
 def registerAuth():
@@ -208,6 +208,9 @@ def home():
         return redirect(url_for('login'))
     return render_template('home.html', username=user)
 
+@app.route('/postReview')
+def postReviewPage():
+  return render_template('post_reviewt.html');
 
 # Define a route to post an event page
 @app.route('/postEvent')
