@@ -210,7 +210,7 @@ def home():
 
 @app.route('/postReview')
 def postReviewPage():
-  return render_template('post_reviewt.html');
+  return render_template('post_review.html');
 
 # Define a route to post an event page
 @app.route('/postEvent')
