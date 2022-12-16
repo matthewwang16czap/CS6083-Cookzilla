@@ -38,22 +38,50 @@ insert into unitconversion (sourceUnit, destinationUnit, ratio)
 values ('ml', 'pt',0.00175975);
 insert into unitconversion (sourceUnit, destinationUnit, ratio)
 values ('pt', 'ml',568.261);
+insert into unitconversion (sourceUnit, destinationUnit, ratio)
 values ('fl oz', 'pt',0.0520421);
 insert into unitconversion (sourceUnit, destinationUnit, ratio)
 values ('pt', 'fl oz',19.2152);
 
+g, mg, kg, oz, lb
 
 insert into unitconversion (sourceUnit, destinationUnit, ratio)
 values ('g', 'mg',1000);
 insert into unitconversion (sourceUnit, destinationUnit, ratio)
+values ('mg', 'g',0.001);
+insert into unitconversion (sourceUnit, destinationUnit, ratio)
+values ('g', 'kg',0.001);
+insert into unitconversion (sourceUnit, destinationUnit, ratio)
 values ('kg', 'g',1000);
+insert into unitconversion (sourceUnit, destinationUnit, ratio)
+values ('g', 'oz',0.035274);
+insert into unitconversion (sourceUnit, destinationUnit, ratio)
+values ('oz', 'g',28.3495);
+insert into unitconversion (sourceUnit, destinationUnit, ratio)
+values ('g', 'lb',0.00220462);
+insert into unitconversion (sourceUnit, destinationUnit, ratio)
+values ('lb', 'g',453.592);
+insert into unitconversion (sourceUnit, destinationUnit, ratio)
+values ('mg', 'kg',0.000001);
+insert into unitconversion (sourceUnit, destinationUnit, ratio)
+values ('kg', 'mg',1000000);
+insert into unitconversion (sourceUnit, destinationUnit, ratio)
+values ('mg', 'oz',0.00003527);
+insert into unitconversion (sourceUnit, destinationUnit, ratio)
+values ('oz', 'mg',28349.5);
+insert into unitconversion (sourceUnit, destinationUnit, ratio)
+values ('mg', 'lb',0.0000022);
+insert into unitconversion (sourceUnit, destinationUnit, ratio)
+values ('lb', 'mg',453592);
 insert into unitconversion (sourceUnit, destinationUnit, ratio)
 values ('kg', 'oz',35.274);
 insert into unitconversion (sourceUnit, destinationUnit, ratio)
-values ('kg', 'lb',2.2);
+values ('oz', 'kg',0.0283495);
 insert into unitconversion (sourceUnit, destinationUnit, ratio)
-values ('oz', 'g',28.35);
+values ('kg', 'lb',2.20462);
+insert into unitconversion (sourceUnit, destinationUnit, ratio)
+values ('lb', 'kg',0.453592);
+insert into unitconversion (sourceUnit, destinationUnit, ratio)
+values ('oz', 'lb',0.0625);
 insert into unitconversion (sourceUnit, destinationUnit, ratio)
 values ('lb', 'oz',16);
-insert into unitconversion (sourceUnit, destinationUnit, ratio)
-values ('lb', 'g',453.592);
