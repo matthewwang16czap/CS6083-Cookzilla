@@ -556,7 +556,7 @@ def search_recipe_detail(recipeID):
         'reviews': {},  # dict of reviews dicts of username, title, description, stars, and photoURLs
         'Steps': {},  # dict of steps dicts of stepNo and description
         'unitConversions': {},
-        'preferunits': {}
+        'preferunits': {'mass': 'none', 'volume': 'none'}
     }
     # prepare queries to get all recipe_detail
     cursor = conn.cursor()
@@ -762,7 +762,7 @@ def search_recipe_detail(recipeID):
             }
             # if unit preference exist, change to preference
             if username is not None:
-                if ingredient['unitName'] in mass_selection and recipe_detail['preferunits']['mass'] is not None:
+                if ingredient['unitName'] in mass_selection and recipe_detail['preferunits']['mass'] != 'none':
                     targetunits = recipe_detail['unitConversions'][ingredient['unitName']]
                     ratio = 0
                     for targetunit in targetunits:
@@ -771,7 +771,7 @@ def search_recipe_detail(recipeID):
                             ingredient['unitName'] = recipe_detail['preferunits']['mass']
                             ingredient['amount'] = decimal.Decimal(
                                 ingredient['amount']) * decimal.Decimal(ratio)
-                if ingredient['unitName'] in volume_selection and recipe_detail['preferunits']['volume'] is not None:
+                if ingredient['unitName'] in volume_selection and recipe_detail['preferunits']['volume'] != 'none':
                     targetunits = recipe_detail['unitConversions'][ingredient['unitName']]
                     ratio = 0
                     for targetunit in targetunits:
