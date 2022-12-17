@@ -2,9 +2,9 @@ from flask import Flask
 import os
 
 #UPLOAD_FOLDER = '/Users/phyllisfrankl/Documents/Magic\ Briefcase/CS3083\ Spring\ 2020/FlaskDemoSpr2020/FlaskDemoPhotos'
-UPLOAD_RECIPE_FOLDER = 'RecipePhotos'
-UPLOAD_EVENT_FOLDER = 'EventPhotos'
-UPLOAD_REVIEW_FOLDER = 'ReviewPictures'
+UPLOAD_RECIPE_FOLDER = 'static\RecipePhotos'
+UPLOAD_EVENT_FOLDER = 'static\EventPhotos'
+UPLOAD_REVIEW_FOLDER = 'static\ReviewPictures'
 ALLOWED_IMAGE_EXTENSIONS = set(['PNG', 'JPG', 'JPEG', 'GIF'])
 
 app = Flask(__name__, static_folder="static")
