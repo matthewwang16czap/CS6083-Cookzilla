@@ -24,6 +24,8 @@
         <th>Event Name</th>
         <th>Event Date</th>
         <th>Event Description</th>
+        <th>Group Name</th>
+        <th>Group Creator</th>
         <th>Event Pictures</th>
         {% for line in events %}
         <tr>
@@ -32,6 +34,8 @@
             <td>{{line.eName}}</td>
             <td>{{line.eDate}}</td>
             <td>{{line.eDesc}}</td>
+            <td>{{line.gName}}</td>
+            <td>{{line.gCreator}}</td>
             <td>
             {% for item in line.pictureURL %}
                 <img src = "{{item}}" alt=" {{item}} "width="200px" height="200px">
