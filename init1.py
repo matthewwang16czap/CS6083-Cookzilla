@@ -21,6 +21,14 @@ salt = "6083database"
 
 # Configure MySQL
 
+# conn = pymysql.connect(host='localhost',
+#                        port=3306,
+#                        user='root',
+#                        password='root',
+#                        db='6083project',
+#                        charset='utf8mb4',
+#                        cursorclass=pymysql.cursors.DictCursor)
+
 conn = pymysql.connect(host='localhost',
                        port=3306,
                        user='holly',
