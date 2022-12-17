@@ -387,9 +387,12 @@ def rsvp():
     data = getUserEvent(user)
     for d in data:
         d['pictureURL'] = (getEventPicture(d['eID']))
-    message = 'You have RSVP'
+    message = None
+    if (response == "1"):
+        message = 'You have chosen Yes with eID: ' + eID
+    if (response == "0"):
+        message = 'You have chosen No with eID: ' + eID
     return render_template('rsvp.html', username=user, events=data, message=message)
-
 
 @app.route('/logout')
 def logout():
