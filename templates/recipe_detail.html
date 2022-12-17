@@ -66,10 +66,10 @@
                         <td><span
                                 amount="{{data.ingredients[i]['amount']}}">{{data.ingredients[i]['amount']}}</span>&nbsp;
                             <select onchange="changeUnit(event)" onfocus="this.oldvalue = this.value;">
-                                <option value={{data.ingredients[i]['unitName']}}>{{data.ingredients[i]['unitName']}}
+                                <option value='{{data.ingredients[i]['unitName']}}'>{{data.ingredients[i]['unitName']}}
                                 </option>
                                 {% for u in data.unitConversions[data.ingredients[i]['unitName']] %}
-                                <option value={{u['name']}}>{{u['name']}}</option>
+                                <option value='{{u['name']}}'>{{u['name']}}</option>
                                 {% endfor %}
                             </select>
                         </td>
@@ -95,8 +95,12 @@
                 {% for i in data.reviews %}
                 <div class="four_per_row">
                     {% if data.reviews[i]['pictureURLs']|length > 0 %}
-                    <img src="{{ url_for('static', filename=data.reviews[i]['pictureURLs'][0]) }}" alt="review_picture"
-                        style="height:80px;display: block;margin-left: auto;margin-right: auto;">
+                    <div style="height:120px;width:100%;display: flex;">
+                        {% for filename in data.reviews[i]['pictureURLs'] %}
+                    <img src="{{ url_for('static', filename=filename) }}" alt="review_picture"
+                        style="height:80px;">
+                    {% endfor %}
+                    </div>
                     {% endif %}
                     <p class="closer_p" style="font-weight: bold;">{{data.reviews[i]['revTitle']}}</p>
                     <p class="closer_p">

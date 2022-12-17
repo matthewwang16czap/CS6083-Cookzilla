@@ -16,7 +16,7 @@
             <td>
                 <select name="unit">
                 {% for u in unit %}
-                <option value={{u.unitName}}>{{u.unitName}}</option>
+                <option value='{{u.unitName}}'>{{u.unitName}}</option>
                 {% endfor %}
             </select></td>
             <td><input type="number" step="0.01" name="amount" required/></td>
