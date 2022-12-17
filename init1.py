@@ -74,7 +74,7 @@ def getUserGroup(user):
 
 def getUserEvent(user):
     cursor = conn.cursor()
-    query = 'SELECT eID, eName, eDesc, eDate FROM Person Join GroupMembership ON Person.userName = GroupMembership.memberName NATURAL JOIN `Event` WHERE username = %s AND eDate > NOW() AND (userName, eID) NOT IN(SELECT userName, eID FROM rsvp WHERE rsvp.userName = %s AND rsvp.eID = eID) ORDER BY eID ASC'
+    query = 'SELECT eID, eName, eDesc, eDate, gName, gCreator FROM Person Join GroupMembership ON Person.userName = GroupMembership.memberName NATURAL JOIN `Event` WHERE username = %s AND eDate > NOW() AND (userName, eID) NOT IN(SELECT userName, eID FROM rsvp WHERE rsvp.userName = %s AND rsvp.eID = eID) ORDER BY eID ASC'
     cursor.execute(query, (user, user))
     data = cursor.fetchall()
     cursor.close
