@@ -787,6 +787,25 @@ def search_recipe_detail(recipeID):
 
     # log user's access
     if username is not None:
+        # check whether once accessed, if accessed, delete it
+        statement = (
+            "select userName, recipeID "
+            "from viewhistory "
+            "where username = %s and recipeID = %s"
+        )
+        try:
+            cursor.execute(statement, (username, recipeID))
+            result = cursor.fetchone()
+            if result is not None:
+                statement = (
+                    "delete from viewhistory "
+                    "where username = %s and recipeID = %s"
+                )
+                cursor.execute(statement, (username, recipeID))
+                conn.commit()
+        except pymysql.InternalError as err:
+            print("Error from MySQL: {}".format(err))
+            raise SelfException(err, status_code=502)
         statement = (
             "insert into viewhistory (userName, recipeID) "
             "values (%s, %s)"
