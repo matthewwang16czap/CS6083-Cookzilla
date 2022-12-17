@@ -23,7 +23,7 @@ values ('l', 'ml',1000);
 insert into unitconversion (sourceUnit, destinationUnit, ratio)
 values ('ml', 'l',0.001);
 insert into unitconversion (sourceUnit, destinationUnit, ratio)
-values ('l', 'fl oz',33,814);
+values ('l', 'fl oz',33.814);
 insert into unitconversion (sourceUnit, destinationUnit, ratio)
 values ('fl oz', 'l',0.0295735);
 insert into unitconversion (sourceUnit, destinationUnit, ratio)
