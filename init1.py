@@ -725,23 +725,14 @@ def search_recipe_detail(recipeID):
         cursor.execute(statement)
         results = cursor.fetchall()
         for result in results:
-            unit_for_source = {
+            unit = {
                 'name': result['destinationUnit'], 'ratio': float(result['ratio'])}
-            unit_for_dest = {
-                'name': result['sourceUnit'], 'ratio': 1/(float(result['ratio']))}
             if result['sourceUnit'] not in recipe_detail['unitConversions']:
                 recipe_detail['unitConversions'][result['sourceUnit']] = [
-                    unit_for_source]
-            elif unit_for_source not in recipe_detail['unitConversions'][result['sourceUnit']]:
+                    unit]
+            elif unit not in recipe_detail['unitConversions'][result['sourceUnit']]:
                 recipe_detail['unitConversions'][result['sourceUnit']].append(
-                    unit_for_source)
-
-            if result['destinationUnit'] not in recipe_detail['unitConversions']:
-                recipe_detail['unitConversions'][result['destinationUnit']] = [
-                    unit_for_dest]
-            elif unit_for_dest not in recipe_detail['unitConversions'][result['destinationUnit']]:
-                recipe_detail['unitConversions'][result['destinationUnit']].append(
-                    unit_for_dest)
+                    unit)
     except pymysql.InternalError as err:
         print("Error from MySQL: {}".format(err))
         raise SelfException(err, status_code=502)
